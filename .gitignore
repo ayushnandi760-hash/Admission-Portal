@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Environment Variables & Secrets (CRITICAL: Never commit .env with real credentials)
+.env
+*.env
+!.env.example
+iem-ams-backend/.env
+iem-ams-backend/.env.*
+!iem-ams-backend/.env.example
+
+# Uploaded Files
+iem-ams-backend/uploads/*
+!iem-ams-backend/uploads/.gitkeep
+
+# Build Outputs
+dist/
+*/dist/
+tmp/
+out-tsc/
+bazel-out/
+
+# Angular cache
+.angular/
+*/.angular/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS Generated
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor / IDE settings
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace

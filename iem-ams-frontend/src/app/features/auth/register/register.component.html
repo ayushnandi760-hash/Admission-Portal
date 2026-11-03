@@ -1,0 +1,106 @@
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+      <div class="card border-0 shadow-lg rounded-3">
+        <div class="card-header bg-iem text-white text-center py-4 rounded-top-3">
+          <span class="badge bg-warning text-dark mb-2 px-3 py-1 fw-bold">IEM ADMISSION 2026-27</span>
+          <h4 class="mb-1 fw-bold">Applicant Registration</h4>
+          <p class="text-white-50 small mb-0">Create an account to submit your admission application</p>
+        </div>
+
+        <div class="card-body p-4 p-md-5">
+          <!-- Error alert -->
+          <div *ngIf="errorMessage" class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+            <div>{{ errorMessage }}</div>
+          </div>
+
+          <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+            <!-- Full Name -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="fullName">Full Name</label>
+              <input
+                id="fullName"
+                type="text"
+                class="form-control"
+                placeholder="e.g. Rahul Sharma"
+                formControlName="fullName"
+                [ngClass]="{ 'is-invalid': f['fullName'].touched && f['fullName'].errors }"
+              />
+              <div *ngIf="f['fullName'].touched && f['fullName'].errors" class="invalid-feedback">
+                <span *ngIf="f['fullName'].errors['required']">Full name is required.</span>
+                <span *ngIf="f['fullName'].errors['minlength']">Name must be at least 2 characters.</span>
+              </div>
+            </div>
+
+            <!-- Email Address -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="reg-email">Email Address</label>
+              <input
+                id="reg-email"
+                type="email"
+                class="form-control"
+                placeholder="name@example.com"
+                formControlName="email"
+                [ngClass]="{ 'is-invalid': f['email'].touched && f['email'].errors }"
+              />
+              <div *ngIf="f['email'].touched && f['email'].errors" class="invalid-feedback">
+                <span *ngIf="f['email'].errors['required']">Email address is required.</span>
+                <span *ngIf="f['email'].errors['email']">Please enter a valid email format.</span>
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="reg-password">Password</label>
+              <input
+                id="reg-password"
+                type="password"
+                class="form-control"
+                placeholder="Minimum 8 characters"
+                formControlName="password"
+                [ngClass]="{ 'is-invalid': f['password'].touched && f['password'].errors }"
+              />
+              <div *ngIf="f['password'].touched && f['password'].errors" class="invalid-feedback">
+                <span *ngIf="f['password'].errors['required']">Password is required.</span>
+                <span *ngIf="f['password'].errors['minlength']">Password must be at least 8 characters.</span>
+              </div>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-4">
+              <label class="form-label fw-semibold" for="confirmPassword">Confirm Password</label>
+              <input
+                id="confirmPassword"
+                type="password"
+                class="form-control"
+                placeholder="Re-type your password"
+                formControlName="confirmPassword"
+                [ngClass]="{ 'is-invalid': f['confirmPassword'].touched && f['confirmPassword'].errors }"
+              />
+              <div *ngIf="f['confirmPassword'].touched && f['confirmPassword'].errors" class="invalid-feedback">
+                <span *ngIf="f['confirmPassword'].errors['required']">Please confirm your password.</span>
+                <span *ngIf="f['confirmPassword'].errors['passwordMismatch']">Passwords do not match.</span>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button
+              type="submit"
+              class="btn btn-iem w-100 py-2 fw-semibold mb-3"
+              [disabled]="isLoading"
+            >
+              <span *ngIf="isLoading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+              {{ isLoading ? 'Creating Account...' : 'Register as Applicant' }}
+            </button>
+          </form>
+
+          <div class="text-center mt-3 pt-3 border-top">
+            <span class="text-muted small">Already registered? </span>
+            <a routerLink="/login" class="fw-semibold text-decoration-none">Sign in here</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

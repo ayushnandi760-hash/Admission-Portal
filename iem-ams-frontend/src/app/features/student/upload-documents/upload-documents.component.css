@@ -1,0 +1,144 @@
+/**
+ * Document Upload & Submission Receipt Styles
+ */
+
+.document-upload-container {
+  background-color: #f7f9fc;
+  min-height: calc(100vh - 120px);
+  color: #212529;
+}
+
+.iem-brand-card {
+  background: #ffffff;
+  border-radius: 14px;
+  border-left: 6px solid #003366 !important;
+  box-shadow: 0 4px 18px rgba(0, 51, 102, 0.08) !important;
+}
+
+.iem-logo-box {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #003366 0%, #002244 100%);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 51, 102, 0.25);
+}
+
+.iem-logo-text {
+  font-weight: 900;
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+  line-height: 1.1;
+  color: #ffc107;
+}
+
+.iem-logo-sub {
+  font-size: 0.58rem;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+}
+
+.iem-main-title {
+  color: #003366;
+  font-weight: 800;
+  font-size: 1.55rem;
+  letter-spacing: -0.3px;
+}
+
+.bg-iem {
+  background-color: #003366 !important;
+}
+
+.bg-iem-gold {
+  background-color: #ffc107 !important;
+}
+
+.bg-light-blue {
+  background-color: #f0f4f9 !important;
+}
+
+.bg-light-green {
+  background-color: #f0fdf4 !important;
+}
+
+/* Card Styling */
+.doc-upload-card {
+  border-radius: 12px;
+  transition: all 0.25s ease-in-out;
+  border: 1px solid rgba(0, 51, 102, 0.08) !important;
+  background: #ffffff;
+}
+
+.doc-upload-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 51, 102, 0.1) !important;
+}
+
+.doc-upload-card.dragging {
+  border: 2px dashed #003366 !important;
+  background-color: #eef5ff;
+}
+
+.doc-upload-card.uploaded {
+  border-top: 4px solid #198754 !important;
+}
+
+/* Dropzone */
+.border-dashed {
+  border: 2px dashed #cbd5e1;
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.border-dashed:hover {
+  border-color: #003366;
+  background-color: #f0f4f9;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Submission Success Card */
+.submission-card {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.success-badge-circle {
+  width: 72px;
+  height: 72px;
+  background-color: #198754;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.ref-number-banner {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e6f0fa 100%);
+  border-color: #b8d5f3 !important;
+}
+
+/* Print Styles */
+@media print {
+  .no-print, nav, footer, .btn {
+    display: none !important;
+  }
+  .printable-receipt {
+    box-shadow: none !important;
+    border: 1px solid #ccc !important;
+  }
+  body, .document-upload-container {
+    background-color: #ffffff !important;
+    padding: 0 !important;
+  }
+}

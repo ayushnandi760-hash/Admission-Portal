@@ -1,0 +1,1044 @@
+<div class="application-portal-container py-4">
+  <div class="container">
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading application...</span>
+      </div>
+      <h5 class="mt-3 text-secondary">Loading admission application details...</h5>
+    </div>
+
+    <div *ngIf="!isLoading">
+
+      <!-- Top Header Card with IEM Branding -->
+      <div class="iem-brand-card card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="iem-logo-box">
+                <span class="iem-logo-text">IEM</span>
+                <span class="iem-logo-sub">ESTD 1989</span>
+              </div>
+              <div>
+                <div class="iem-session-pill mb-1">
+                  <span class="badge bg-iem-gold text-dark fw-bold">SESSION {{ applicationForm.get('programSelection.session')?.value || '2026-2027' }}</span>
+                  <span class="ms-2">
+                    <app-status-badge [status]="existingApp?.status || 'draft'"></app-status-badge>
+                  </span>
+                  <span *ngIf="existingApp?.applicationNumber" class="badge bg-light text-dark border ms-2">
+                    Ref: {{ existingApp?.applicationNumber }}
+                  </span>
+                </div>
+                <h2 class="iem-main-title mb-0">Institute of Engineering &amp; Management</h2>
+                <p class="text-muted small mb-0">
+                  Online Admission Application Form &bull; Approved by AICTE, Affiliated to MAKAUT
+                </p>
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button
+                *ngIf="isDraft"
+                type="button"
+                class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                (click)="fillDemoData()"
+                title="Fill with sample admission data for quick testing"
+              >
+                <span>⚡</span> Fill Demo Info
+              </button>
+              <a routerLink="/student/dashboard" class="btn btn-outline-primary btn-sm">
+                &larr; Applicant Dashboard
+              </a>
+            </div>
+          </div>
+
+          <!-- Application Locked Banner if already submitted -->
+          <div *ngIf="!isDraft" class="alert alert-info mt-3 mb-0 d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+              <strong>🔒 Application Submitted:</strong> Your application is locked under review.
+              <span *ngIf="existingApp?.applicationNumber">Reference No: <strong>{{ existingApp?.applicationNumber }}</strong>.</span>
+              Submitted on {{ existingApp?.submittedAt | date:'medium' }}.
+            </div>
+            <a [routerLink]="['/student/application/documents', existingApp?._id]" class="btn btn-primary btn-sm">
+              📄 View Verification Documents &rarr;
+            </a>
+          </div>
+
+          <!-- Admin remarks banner if present -->
+          <div *ngIf="existingApp?.adminRemarks" class="alert alert-warning mt-3 mb-0">
+            <strong>Reviewer Note:</strong> {{ existingApp?.adminRemarks }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Notification Alerts -->
+      <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <strong>✓ Success:</strong> {{ successMessage }}
+        <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+      </div>
+
+      <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <strong>⚠️ Attention:</strong> {{ errorMessage }}
+        <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+      </div>
+
+      <!-- Quick Demo Auto-Fill Banner for Rapid Testing -->
+      <div *ngIf="isDraft" class="alert alert-light border border-primary shadow-sm d-flex flex-wrap align-items-center justify-content-between p-3 mb-4 rounded-3 bg-white">
+        <div class="d-flex align-items-center gap-3 mb-2 mb-md-0">
+          <div class="bg-warning bg-opacity-25 rounded-circle p-2 text-dark fs-4 lh-1">⚡</div>
+          <div>
+            <strong class="text-primary fs-6">Rapid Testing Helper: Fill Demo Details</strong>
+            <div class="small text-muted">Click below to auto-populate all 6 sections with sample verified IEM candidate details (Bio, Address, 10th/12th PCM, Parents, Entrance Ranks).</div>
+          </div>
+        </div>
+        <button
+          type="button"
+          class="btn btn-warning fw-bold px-3 py-2 text-dark shadow-sm d-flex align-items-center gap-2"
+          (click)="fillDemoData()"
+        >
+          <span>⚡</span> Auto-Fill Demo Details
+        </button>
+      </div>
+
+      <!-- Multi-step Application Wizard Navigation Bar -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-3">
+          <div class="wizard-stepper">
+            <button
+              type="button"
+              class="wizard-step-btn"
+              [class.active]="currentStep === 1"
+              [class.completed]="currentStep > 1"
+              (click)="goToStep(1)"
+            >
+              <div class="step-circle">1</div>
+              <div class="step-label">
+                <span class="step-title">Program Selection</span>
+                <span class="step-sub">Degree &amp; Branch</span>
+              </div>
+            </button>
+
+            <div class="step-connector" [class.filled]="currentStep > 1"></div>
+
+            <button
+              type="button"
+              class="wizard-step-btn"
+              [class.active]="currentStep === 2"
+              [class.completed]="currentStep > 2"
+              (click)="goToStep(2)"
+            >
+              <div class="step-circle">2</div>
+              <div class="step-label">
+                <span class="step-title">Personal Info</span>
+                <span class="step-sub">Identity &amp; Bio</span>
+              </div>
+            </button>
+
+            <div class="step-connector" [class.filled]="currentStep > 2"></div>
+
+            <button
+              type="button"
+              class="wizard-step-btn"
+              [class.active]="currentStep === 3"
+              [class.completed]="currentStep > 3"
+              (click)="goToStep(3)"
+            >
+              <div class="step-circle">3</div>
+              <div class="step-label">
+                <span class="step-title">Contact &amp; Guardian</span>
+                <span class="step-sub">Address &amp; Parents</span>
+              </div>
+            </button>
+
+            <div class="step-connector" [class.filled]="currentStep > 3"></div>
+
+            <button
+              type="button"
+              class="wizard-step-btn"
+              [class.active]="currentStep === 4"
+              [class.completed]="currentStep > 4"
+              (click)="goToStep(4)"
+            >
+              <div class="step-circle">4</div>
+              <div class="step-label">
+                <span class="step-title">Academic History</span>
+                <span class="step-sub">10th, 12th &amp; Diploma</span>
+              </div>
+            </button>
+
+            <div class="step-connector" [class.filled]="currentStep > 4"></div>
+
+            <button
+              type="button"
+              class="wizard-step-btn"
+              [class.active]="currentStep === 5"
+              [class.completed]="currentStep > 5"
+              (click)="goToStep(5)"
+            >
+              <div class="step-circle">5</div>
+              <div class="step-label">
+                <span class="step-title">Entrance &amp; Details</span>
+                <span class="step-sub">Ranks &amp; Profile</span>
+              </div>
+            </button>
+
+            <div class="step-connector" [class.filled]="currentStep > 5"></div>
+
+            <button
+              type="button"
+              class="wizard-step-btn"
+              [class.active]="currentStep === 6"
+              [class.completed]="currentStep === 6"
+              (click)="goToStep(6)"
+            >
+              <div class="step-circle">6</div>
+              <div class="step-label">
+                <span class="step-title">Review &amp; Next</span>
+                <span class="step-sub">To Documents &rarr;</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Application Form Main Container -->
+      <form [formGroup]="applicationForm">
+
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <!-- STEP 1: Program Selection                                  -->
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <div *ngIf="currentStep === 1" class="wizard-pane">
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="programSelection">
+            <div class="card-header bg-iem-header text-white p-3">
+              <h5 class="mb-0 fw-semibold">🎯 Section 1: Academic Program &amp; Specialization Selection</h5>
+              <p class="small text-white-50 mb-0">Select your intended program of study and preferred department at IEM Kolkata.</p>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <!-- Academic Program -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Academic Program <span class="text-danger">*</span>
+                  </label>
+                  <select class="form-select form-select-lg custom-input" formControlName="programName">
+                    <option *ngFor="let prog of availablePrograms" [value]="prog.code">
+                      {{ prog.name }}
+                    </option>
+                    <option *ngIf="availablePrograms.length === 0" value="B.Tech">Bachelor of Technology (B.Tech)</option>
+                    <option *ngIf="availablePrograms.length === 0" value="MBA">Master of Business Administration (MBA)</option>
+                    <option *ngIf="availablePrograms.length === 0" value="MCA">Master of Computer Applications (MCA)</option>
+                    <option *ngIf="availablePrograms.length === 0" value="M.Tech">Master of Technology (M.Tech)</option>
+                    <option *ngIf="availablePrograms.length === 0" value="BBA">Bachelor of Business Administration (BBA)</option>
+                    <option *ngIf="availablePrograms.length === 0" value="BCA">Bachelor of Computer Applications (BCA)</option>
+                  </select>
+                  <div class="form-text small">Programs are verified official offerings of IEM Kolkata.</div>
+                </div>
+
+                <!-- Preferred Department -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Preferred Department / Specialization <span class="text-danger">*</span>
+                  </label>
+                  <select class="form-select form-select-lg custom-input" formControlName="department">
+                    <option value="" disabled>-- Select Department --</option>
+                    <option *ngFor="let dept of availableDepartments" [value]="dept">
+                      {{ dept }}
+                    </option>
+                  </select>
+                  <div class="form-text small">Options dynamically load based on selected program.</div>
+                </div>
+
+                <!-- Academic Session -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Academic Session <span class="text-danger">*</span>
+                  </label>
+                  <select class="form-select custom-input" formControlName="session">
+                    <option *ngFor="let s of availableSessions" [value]="s">{{ s }}</option>
+                  </select>
+                </div>
+
+                <!-- Admission Category -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Admission Category <span class="text-danger">*</span>
+                  </label>
+                  <select class="form-select custom-input" formControlName="category">
+                    <option *ngFor="let cat of admissionCategories" [value]="cat">{{ cat }}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <!-- STEP 2: Personal Information                               -->
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <div *ngIf="currentStep === 2" class="wizard-pane">
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="personalDetails">
+            <div class="card-header bg-iem-header text-white p-3">
+              <h5 class="mb-0 fw-semibold">👤 Section 2: Personal Information</h5>
+              <p class="small text-white-50 mb-0">Provide applicant bio-data as printed on Class 10/12 official records.</p>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <!-- Full Name -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Full Name (as per 10th Admit Card) <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="fullName"
+                    placeholder="Enter full name"
+                    [class.is-invalid]="applicationForm.get('personalDetails.fullName')?.invalid && applicationForm.get('personalDetails.fullName')?.touched"
+                  />
+                  <div class="invalid-feedback">Full name is required.</div>
+                </div>
+
+                <!-- Date of Birth -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Date of Birth <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    class="form-control custom-input"
+                    formControlName="dateOfBirth"
+                    [class.is-invalid]="applicationForm.get('personalDetails.dateOfBirth')?.invalid && applicationForm.get('personalDetails.dateOfBirth')?.touched"
+                  />
+                  <div class="invalid-feedback">Date of birth is required.</div>
+                </div>
+
+                <!-- Father's Name -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Father's Name <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="fatherName"
+                    placeholder="Enter father's name"
+                    [class.is-invalid]="applicationForm.get('personalDetails.fatherName')?.invalid && applicationForm.get('personalDetails.fatherName')?.touched"
+                  />
+                  <div class="invalid-feedback">Father's name is required.</div>
+                </div>
+
+                <!-- Mother's Name -->
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">
+                    Mother's Name <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="motherName"
+                    placeholder="Enter mother's name"
+                    [class.is-invalid]="applicationForm.get('personalDetails.motherName')?.invalid && applicationForm.get('personalDetails.motherName')?.touched"
+                  />
+                  <div class="invalid-feedback">Mother's name is required.</div>
+                </div>
+
+                <!-- Gender -->
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">
+                    Gender <span class="text-danger">*</span>
+                  </label>
+                  <select class="form-select custom-input" formControlName="gender">
+                    <option *ngFor="let g of genderOptions" [value]="g">{{ g }}</option>
+                  </select>
+                </div>
+
+                <!-- Nationality -->
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">
+                    Nationality <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="nationality"
+                    placeholder="Indian"
+                  />
+                </div>
+
+                <!-- Social Category -->
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">
+                    Social Category <span class="text-danger">*</span>
+                  </label>
+                  <select class="form-select custom-input" formControlName="category">
+                    <option *ngFor="let cat of categoryOptions" [value]="cat">{{ cat }}</option>
+                  </select>
+                </div>
+
+                <!-- Blood Group (Optional) -->
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold text-dark">Blood Group (Optional)</label>
+                  <select class="form-select custom-input" formControlName="bloodGroup">
+                    <option value="">-- Select Blood Group --</option>
+                    <option *ngFor="let bg of bloodGroupOptions" [value]="bg">{{ bg }}</option>
+                  </select>
+                </div>
+
+                <!-- Religion (Optional) -->
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold text-dark">Religion (Optional)</label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="religion"
+                    placeholder="e.g. Hinduism, Islam, Christianity, etc."
+                  />
+                </div>
+
+                <!-- Marital Status (Optional) -->
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold text-dark">Marital Status (Optional)</label>
+                  <select class="form-select custom-input" formControlName="maritalStatus">
+                    <option *ngFor="let ms of maritalStatusOptions" [value]="ms">{{ ms }}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <!-- STEP 3: Contact & Guardian Information                     -->
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <div *ngIf="currentStep === 3" class="wizard-pane">
+          <!-- Contact Information Card -->
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="contactDetails">
+            <div class="card-header bg-iem-header text-white p-3">
+              <h5 class="mb-0 fw-semibold">📞 Section 3: Contact Information</h5>
+              <p class="small text-white-50 mb-0">Provide primary communication channels and residential address.</p>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">
+                    Primary Mobile Number <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    class="form-control custom-input"
+                    formControlName="primaryMobile"
+                    placeholder="10-digit mobile number"
+                    maxlength="10"
+                    [class.is-invalid]="applicationForm.get('contactDetails.primaryMobile')?.invalid && applicationForm.get('contactDetails.primaryMobile')?.touched"
+                  />
+                  <div class="invalid-feedback">Valid 10-digit mobile number required.</div>
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold text-dark">Alternate Mobile Number</label>
+                  <input
+                    type="tel"
+                    class="form-control custom-input"
+                    formControlName="alternateMobile"
+                    placeholder="Optional alternate mobile"
+                    maxlength="10"
+                  />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">
+                    Email Address <span class="text-danger">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    class="form-control custom-input"
+                    formControlName="email"
+                    placeholder="example@gmail.com"
+                    [class.is-invalid]="applicationForm.get('contactDetails.email')?.invalid && applicationForm.get('contactDetails.email')?.touched"
+                  />
+                  <div class="invalid-feedback">Valid email address required.</div>
+                </div>
+              </div>
+
+              <hr class="my-4" />
+
+              <!-- Permanent Address -->
+              <h6 class="fw-bold text-primary mb-3">📍 Permanent Residential Address</h6>
+              <div formGroupName="permanentAddress" class="row g-3">
+                <div class="col-md-12">
+                  <label class="form-label fw-bold text-dark">Address Line <span class="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="addressLine"
+                    placeholder="House/Flat No., Building Name, Street"
+                    [class.is-invalid]="applicationForm.get('contactDetails.permanentAddress.addressLine')?.invalid && applicationForm.get('contactDetails.permanentAddress.addressLine')?.touched"
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">City / Town <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control custom-input" formControlName="city" placeholder="Kolkata" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">State <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control custom-input" formControlName="state" placeholder="West Bengal" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Country <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control custom-input" formControlName="country" placeholder="India" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">PIN Code <span class="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="pincode"
+                    placeholder="700091"
+                    maxlength="6"
+                    [class.is-invalid]="applicationForm.get('contactDetails.permanentAddress.pincode')?.invalid && applicationForm.get('contactDetails.permanentAddress.pincode')?.touched"
+                  />
+                  <div class="invalid-feedback">Valid 6-digit PIN code required.</div>
+                </div>
+              </div>
+
+              <!-- Same as Permanent Checkbox -->
+              <div class="form-check form-switch mt-4 p-3 bg-light-blue rounded-3 border">
+                <input
+                  class="form-check-input ms-0 me-2"
+                  type="checkbox"
+                  id="sameAsPermanentCheck"
+                  formControlName="sameAsPermanent"
+                />
+                <label class="form-check-label fw-bold text-dark" for="sameAsPermanentCheck">
+                  Present address is same as Permanent address
+                </label>
+                <div class="small text-muted">When checked, your permanent address will automatically sync with your present address.</div>
+              </div>
+
+              <!-- Present Address -->
+              <div *ngIf="!applicationForm.get('contactDetails.sameAsPermanent')?.value" class="mt-4">
+                <h6 class="fw-bold text-primary mb-3">🏠 Present / Correspondence Address</h6>
+                <div formGroupName="presentAddress" class="row g-3">
+                  <div class="col-md-12">
+                    <label class="form-label fw-bold text-dark">Address Line <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control custom-input" formControlName="addressLine" placeholder="Present Street Address" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">City / Town <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control custom-input" formControlName="city" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">State <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control custom-input" formControlName="state" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">Country <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control custom-input" formControlName="country" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold text-dark">PIN Code <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control custom-input" formControlName="pincode" maxlength="6" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Guardian Information Card -->
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="guardianDetails">
+            <div class="card-header bg-iem-header text-white p-3">
+              <h5 class="mb-0 fw-semibold">👨‍👩‍👦 Section 4: Parent / Guardian Information</h5>
+              <p class="small text-white-50 mb-0">Provide family contact and occupation information.</p>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-dark">Father's / Guardian's Name</label>
+                  <input type="text" class="form-control custom-input" formControlName="fatherName" placeholder="Father's Name" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-dark">Father's Occupation</label>
+                  <input type="text" class="form-control custom-input" formControlName="fatherOccupation" placeholder="e.g. Service / Business" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-dark">Father's Contact Number</label>
+                  <input type="tel" class="form-control custom-input" formControlName="fatherPhone" placeholder="10-digit phone" maxlength="10" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-dark">Father's Email</label>
+                  <input type="email" class="form-control custom-input" formControlName="fatherEmail" placeholder="father@example.com" />
+                </div>
+
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold text-dark">Mother's Name</label>
+                  <input type="text" class="form-control custom-input" formControlName="motherName" placeholder="Mother's Name" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold text-dark">Mother's Occupation</label>
+                  <input type="text" class="form-control custom-input" formControlName="motherOccupation" placeholder="e.g. Professional / Homemaker" />
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label fw-semibold text-dark">Annual Family Income (Optional)</label>
+                  <input type="text" class="form-control custom-input" formControlName="annualIncome" placeholder="e.g. 8,00,000 INR" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <!-- STEP 4: Academic History                                   -->
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <div *ngIf="currentStep === 4" class="wizard-pane" formGroupName="academicDetails">
+
+          <!-- Class 10 Card -->
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="class10">
+            <div class="card-header bg-iem-header text-white p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <h5 class="mb-0 fw-semibold">🎓 Class 10 (Secondary / Matriculation) Details</h5>
+                <p class="small text-white-50 mb-0">Record scores and board verification details.</p>
+              </div>
+              <span class="badge bg-warning text-dark fw-bold">Mandatory</span>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">Board / Council <span class="text-danger">*</span></label>
+                  <select class="form-select custom-input" formControlName="board">
+                    <option *ngFor="let b of commonBoards" [value]="b">{{ b }}</option>
+                  </select>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label fw-bold text-dark">School / Institute Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control custom-input" formControlName="schoolName" placeholder="Full school name" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Passing Year <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control custom-input" formControlName="passingYear" />
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Roll Number <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control custom-input" formControlName="rollNumber" placeholder="Roll No. on Admit Card" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-dark">Total Marks</label>
+                  <input type="number" class="form-control custom-input" formControlName="totalMarks" placeholder="e.g. 500" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-dark">Marks Obtained</label>
+                  <input type="number" class="form-control custom-input" formControlName="marksObtained" placeholder="e.g. 450" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Percentage (%) / CGPA <span class="text-danger">*</span></label>
+                  <input type="number" step="0.01" class="form-control custom-input" formControlName="percentage" placeholder="e.g. 90.0" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Class 12 Card -->
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="class12">
+            <div class="card-header bg-iem-header text-white p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <h5 class="mb-0 fw-semibold">🎓 Class 12 (Higher Secondary / Intermediate) Details</h5>
+                <p class="small text-white-50 mb-0">Record stream, board, and subject-wise PCM scores.</p>
+              </div>
+              <span class="badge bg-warning text-dark fw-bold">Mandatory</span>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">Board / Council <span class="text-danger">*</span></label>
+                  <select class="form-select custom-input" formControlName="board">
+                    <option *ngFor="let b of commonBoards" [value]="b">{{ b }}</option>
+                  </select>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label fw-bold text-dark">School / College Name <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control custom-input" formControlName="schoolName" placeholder="Full institution name" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Passing Year <span class="text-danger">*</span></label>
+                  <input type="number" class="form-control custom-input" formControlName="passingYear" />
+                </div>
+
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Roll Number <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control custom-input" formControlName="rollNumber" placeholder="Roll Number" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Stream <span class="text-danger">*</span></label>
+                  <select class="form-select custom-input" formControlName="stream">
+                    <option *ngFor="let s of streamOptions" [value]="s">{{ s }}</option>
+                  </select>
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-semibold text-dark">Total Marks</label>
+                  <input type="number" class="form-control custom-input" formControlName="totalMarks" placeholder="e.g. 500" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Aggregate Percentage (%) <span class="text-danger">*</span></label>
+                  <input type="number" step="0.01" class="form-control custom-input" formControlName="percentage" placeholder="e.g. 92.5" />
+                </div>
+
+                <!-- PCM Breakdown for Technical Eligibility -->
+                <div class="col-12 mt-2">
+                  <div class="p-3 bg-light-blue rounded-3 border">
+                    <h6 class="fw-bold text-primary mb-2">🔬 Science Subject Breakdown (Required for B.Tech / Engineering)</h6>
+                    <div class="row g-3">
+                      <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-dark">Physics Marks (out of 100)</label>
+                        <input type="number" class="form-control custom-input" formControlName="physicsMarks" placeholder="e.g. 90" />
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-dark">Chemistry Marks (out of 100)</label>
+                        <input type="number" class="form-control custom-input" formControlName="chemistryMarks" placeholder="e.g. 88" />
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-dark">Mathematics Marks (out of 100)</label>
+                        <input type="number" class="form-control custom-input" formControlName="mathMarks" placeholder="e.g. 94" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Diploma Card (Conditional) -->
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="diploma">
+            <div class="card-header bg-light p-3 border-bottom d-flex align-items-center justify-content-between">
+              <div class="form-check form-switch mb-0">
+                <input class="form-check-input" type="checkbox" id="hasDiplomaSwitch" formControlName="hasDiploma" />
+                <label class="form-check-label fw-bold text-dark ms-2" for="hasDiplomaSwitch">
+                  I have completed / am pursuing an Engineering Diploma (Lateral Entry candidate)
+                </label>
+              </div>
+              <span class="badge bg-secondary">Optional</span>
+            </div>
+            <div class="card-body p-4" *ngIf="applicationForm.get('academicDetails.diploma.hasDiploma')?.value">
+              <div class="row g-3">
+                <div class="col-md-4">
+                  <label class="form-label fw-bold text-dark">Board / University</label>
+                  <input type="text" class="form-control custom-input" formControlName="boardUniversity" placeholder="e.g. WBSCTE" />
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label fw-bold text-dark">Polytechnic / Institute Name</label>
+                  <input type="text" class="form-control custom-input" formControlName="instituteName" placeholder="Polytechnic name" />
+                </div>
+                <div class="col-md-3">
+                  <label class="form-label fw-bold text-dark">Branch / Specialization</label>
+                  <input type="text" class="form-control custom-input" formControlName="branch" placeholder="e.g. CST / EE / ME" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">Passing Year</label>
+                  <input type="number" class="form-control custom-input" formControlName="passingYear" />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">Overall Percentage / CGPA</label>
+                  <input type="number" step="0.01" class="form-control custom-input" formControlName="percentage" placeholder="e.g. 85.5" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <!-- STEP 5: Entrance Exam & Additional Information              -->
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <div *ngIf="currentStep === 5" class="wizard-pane">
+
+          <!-- Entrance Examinations Card -->
+          <div class="card border-0 shadow-sm mb-4 form-card">
+            <div class="card-header bg-iem-header text-white p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <h5 class="mb-0 fw-semibold">📝 Section 6: Entrance Examination Details</h5>
+                <p class="small text-white-50 mb-0">Record all national or state entrance test ranks (WBJEE, JEE Main, WB-JECA, GATE, CAT).</p>
+              </div>
+              <button
+                type="button"
+                class="btn btn-warning btn-sm fw-bold d-flex align-items-center gap-1"
+                (click)="addEntranceExam()"
+              >
+                <span>➕</span> Add Exam Entry
+              </button>
+            </div>
+            <div class="card-body p-4" formArrayName="entranceExaminations">
+              <div
+                *ngFor="let exam of entranceExams.controls; let i = index"
+                [formGroupName]="i"
+                class="p-3 mb-3 bg-light-blue rounded-3 border position-relative"
+              >
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="badge bg-iem text-white fw-bold">Examination Entry #{{ i + 1 }}</span>
+                  <button
+                    *ngIf="entranceExams.length > 1"
+                    type="button"
+                    class="btn btn-outline-danger btn-sm py-0 px-2"
+                    (click)="removeEntranceExam(i)"
+                    title="Remove this entrance exam"
+                  >
+                    &times; Remove
+                  </button>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-dark">Examination Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control custom-input" formControlName="examName" placeholder="e.g. WBJEE / JEE Main / GATE" />
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-dark">Year</label>
+                    <input type="number" class="form-control custom-input" formControlName="examYear" />
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-dark">Roll / App No.</label>
+                    <input type="text" class="form-control custom-input" formControlName="rollNumber" placeholder="Roll No." />
+                  </div>
+                  <div class="col-md-2">
+                    <label class="form-label small fw-bold text-dark">Rank (GMR / CRL)</label>
+                    <input type="text" class="form-control custom-input" formControlName="rank" placeholder="e.g. 1420" />
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label small fw-bold text-dark">Score / Percentile</label>
+                    <input type="text" class="form-control custom-input" formControlName="scorePercentile" placeholder="e.g. 98.4 Percentile" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Additional Information Card -->
+          <div class="card border-0 shadow-sm mb-4 form-card" formGroupName="additionalInformation">
+            <div class="card-header bg-iem-header text-white p-3">
+              <h5 class="mb-0 fw-semibold">🌟 Section 7: Additional Information &amp; Achievements</h5>
+              <p class="small text-white-50 mb-0">Disability accommodation, preferred communication, and extracurricular achievements.</p>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">Previous Educational Institution</label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="previousInstitution"
+                    placeholder="Name of last attended school/college"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold text-dark">Preferred Communication Method</label>
+                  <select class="form-select custom-input" formControlName="preferredCommunication">
+                    <option *ngFor="let opt of communicationOptions" [value]="opt">{{ opt }}</option>
+                  </select>
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label fw-semibold text-dark">Disability Accommodation Requirement (Optional)</label>
+                  <input
+                    type="text"
+                    class="form-control custom-input"
+                    formControlName="disabilityAccommodation"
+                    placeholder="Indicate if any special physical or examination assistance is required"
+                  />
+                </div>
+                <div class="col-md-12">
+                  <label class="form-label fw-semibold text-dark">Honors, Extra-Curricular &amp; Academic Achievements</label>
+                  <textarea
+                    rows="3"
+                    class="form-control custom-input"
+                    formControlName="achievements"
+                    placeholder="List Olympiads, sports, coding competitions, robotics, or social service accomplishments..."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <!-- STEP 6: Review Application & Proceed to Documents           -->
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <div *ngIf="currentStep === 6" class="wizard-pane">
+          <div class="card border-0 shadow-sm mb-4 form-card">
+            <div class="card-header bg-iem-header text-white p-3 d-flex align-items-center justify-content-between">
+              <div>
+                <h5 class="mb-0 fw-semibold">📋 Step 6: Review Admission Application Summary</h5>
+                <p class="small text-white-50 mb-0">Please verify your entered details before proceeding to the document upload stage.</p>
+              </div>
+              <span class="badge bg-iem-gold text-dark fw-bold px-3 py-2 fs-6">Stage 1 of 2 Complete</span>
+            </div>
+            <div class="card-body p-4">
+
+              <!-- Review Alert Notice -->
+              <div class="alert alert-primary d-flex align-items-center gap-3 mb-4">
+                <span class="fs-2">ℹ️</span>
+                <div>
+                  <strong>Application Saved as Draft in MongoDB:</strong>
+                  You can review all information below. Clicking <strong>"Continue to Documents &rarr;"</strong> will securely persist your application draft and open the dedicated document upload portal.
+                </div>
+              </div>
+
+              <!-- Section 1 Summary -->
+              <div class="summary-section mb-4 p-3 bg-light rounded-3 border">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                  <h6 class="fw-bold text-primary mb-0">🎯 Program &amp; Specialization</h6>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToStep(1)">✏️ Edit</button>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-3"><strong>Program:</strong> {{ applicationForm.get('programSelection.programName')?.value }}</div>
+                  <div class="col-md-4"><strong>Department:</strong> {{ applicationForm.get('programSelection.department')?.value }}</div>
+                  <div class="col-md-2"><strong>Session:</strong> {{ applicationForm.get('programSelection.session')?.value }}</div>
+                  <div class="col-md-3"><strong>Category:</strong> {{ applicationForm.get('programSelection.category')?.value }}</div>
+                </div>
+              </div>
+
+              <!-- Section 2 Summary -->
+              <div class="summary-section mb-4 p-3 bg-light rounded-3 border">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                  <h6 class="fw-bold text-primary mb-0">👤 Personal Details</h6>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToStep(2)">✏️ Edit</button>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-4"><strong>Full Name:</strong> {{ applicationForm.get('personalDetails.fullName')?.value }}</div>
+                  <div class="col-md-4"><strong>Father's Name:</strong> {{ applicationForm.get('personalDetails.fatherName')?.value }}</div>
+                  <div class="col-md-4"><strong>Mother's Name:</strong> {{ applicationForm.get('personalDetails.motherName')?.value }}</div>
+                  <div class="col-md-3"><strong>Date of Birth:</strong> {{ applicationForm.get('personalDetails.dateOfBirth')?.value }}</div>
+                  <div class="col-md-3"><strong>Gender:</strong> {{ applicationForm.get('personalDetails.gender')?.value }}</div>
+                  <div class="col-md-3"><strong>Nationality:</strong> {{ applicationForm.get('personalDetails.nationality')?.value }}</div>
+                  <div class="col-md-3"><strong>Category:</strong> {{ applicationForm.get('personalDetails.category')?.value }}</div>
+                </div>
+              </div>
+
+              <!-- Section 3 Summary -->
+              <div class="summary-section mb-4 p-3 bg-light rounded-3 border">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                  <h6 class="fw-bold text-primary mb-0">📞 Contact &amp; Residential Information</h6>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToStep(3)">✏️ Edit</button>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-4"><strong>Primary Mobile:</strong> {{ applicationForm.get('contactDetails.primaryMobile')?.value }}</div>
+                  <div class="col-md-4"><strong>Email Address:</strong> {{ applicationForm.get('contactDetails.email')?.value }}</div>
+                  <div class="col-md-4"><strong>Permanent City/State:</strong> {{ applicationForm.get('contactDetails.permanentAddress.city')?.value }}, {{ applicationForm.get('contactDetails.permanentAddress.state')?.value }} ({{ applicationForm.get('contactDetails.permanentAddress.pincode')?.value }})</div>
+                  <div class="col-12 mt-2">
+                    <strong>Permanent Address:</strong> {{ applicationForm.get('contactDetails.permanentAddress.addressLine')?.value }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 4 Summary -->
+              <div class="summary-section mb-4 p-3 bg-light rounded-3 border">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                  <h6 class="fw-bold text-primary mb-0">🎓 Academic History Summary</h6>
+                  <button type="button" class="btn btn-outline-primary btn-sm" (click)="goToStep(4)">✏️ Edit</button>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6 border-end">
+                    <h6 class="fw-bold text-secondary mb-1">Class 10 (Secondary)</h6>
+                    <div>Board: {{ applicationForm.get('academicDetails.class10.board')?.value }} ({{ applicationForm.get('academicDetails.class10.passingYear')?.value }})</div>
+                    <div>School: {{ applicationForm.get('academicDetails.class10.schoolName')?.value }}</div>
+                    <div>Percentage / Score: <strong>{{ applicationForm.get('academicDetails.class10.percentage')?.value }}%</strong></div>
+                  </div>
+                  <div class="col-md-6">
+                    <h6 class="fw-bold text-secondary mb-1">Class 12 (Higher Secondary)</h6>
+                    <div>Board: {{ applicationForm.get('academicDetails.class12.board')?.value }} &bull; Stream: {{ applicationForm.get('academicDetails.class12.stream')?.value }}</div>
+                    <div>School: {{ applicationForm.get('academicDetails.class12.schoolName')?.value }}</div>
+                    <div>Aggregate Percentage: <strong>{{ applicationForm.get('academicDetails.class12.percentage')?.value }}%</strong></div>
+                    <div class="small text-muted mt-1">
+                      Physics: {{ applicationForm.get('academicDetails.class12.physicsMarks')?.value }} &bull;
+                      Chemistry: {{ applicationForm.get('academicDetails.class12.chemistryMarks')?.value }} &bull;
+                      Mathematics: {{ applicationForm.get('academicDetails.class12.mathMarks')?.value }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stage 2 Transition CTA Banner -->
+              <div class="card border-primary bg-light-blue p-4 text-center rounded-3">
+                <h4 class="fw-bold text-primary mb-2">Ready to Upload Verification Documents?</h4>
+                <p class="text-dark mb-4 col-md-10 mx-auto">
+                  Click the button below to save your application draft and navigate to the <strong>Document Upload Portal</strong>. You will be able to upload your Photo, Signature, Marksheets, and Entrance Rank Card.
+                </p>
+                <div>
+                  <button
+                    type="button"
+                    class="btn btn-primary btn-lg px-5 py-3 fw-bold shadow"
+                    (click)="proceedToDocuments()"
+                    [disabled]="isSaving"
+                  >
+                    <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-2"></span>
+                    <span>Continue to Documents &rarr;</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </form>
+
+      <!-- Bottom Navigation Toolbar -->
+      <div class="card border-0 shadow-sm sticky-bottom mt-4 bottom-toolbar-card">
+        <div class="card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div>
+            <button
+              *ngIf="currentStep > 1"
+              type="button"
+              class="btn btn-outline-secondary px-4 fw-semibold"
+              (click)="prevStep()"
+            >
+              &larr; Previous Step
+            </button>
+          </div>
+
+          <div class="d-flex align-items-center flex-wrap gap-2">
+            <button
+              *ngIf="isDraft"
+              type="button"
+              class="btn btn-outline-warning text-dark px-3 fw-semibold d-flex align-items-center gap-1"
+              (click)="fillDemoData()"
+              title="Populate all sections with verified sample candidate details"
+            >
+              <span>⚡</span> Fill Demo Info
+            </button>
+
+            <button
+              *ngIf="isDraft"
+              type="button"
+              class="btn btn-outline-primary px-4 fw-semibold"
+              (click)="saveDraft(true)"
+              [disabled]="isSaving"
+            >
+              <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
+              💾 Save Draft
+            </button>
+
+            <button
+              *ngIf="currentStep < totalSteps"
+              type="button"
+              class="btn btn-primary px-4 fw-bold"
+              (click)="nextStep()"
+            >
+              Next Step &rarr;
+            </button>
+
+            <button
+              *ngIf="currentStep === totalSteps"
+              type="button"
+              class="btn btn-success px-4 fw-bold"
+              (click)="proceedToDocuments()"
+              [disabled]="isSaving"
+            >
+              <span *ngIf="isSaving" class="spinner-border spinner-border-sm me-1"></span>
+              Continue to Documents &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>

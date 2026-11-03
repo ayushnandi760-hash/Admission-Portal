@@ -1,0 +1,20 @@
+/* Bootstrap — imported via node_modules so no CDN dependency */
+@import "bootstrap/dist/css/bootstrap.min.css";
+
+/* ── Global Custom Styles ─────────────────────────────────────────── */
+:root {
+  --iem-primary: #003366;     /* IEM navy blue */
+  --iem-accent:  #e8a000;     /* IEM gold accent */
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+}
+
+/* Status badge colour overrides — used by the StatusBadgeComponent */
+.badge-draft        { background-color: #6c757d; }
+.badge-submitted    { background-color: #0d6efd; }
+.badge-under_review { background-color: #fd7e14; }
+.badge-accepted     { background-color: #198754; }
+.badge-rejected     { background-color: #dc3545; }

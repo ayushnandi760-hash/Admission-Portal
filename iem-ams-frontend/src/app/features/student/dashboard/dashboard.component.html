@@ -1,0 +1,103 @@
+<div class="container py-4">
+  <!-- Welcome header -->
+  <div class="p-4 p-md-5 mb-4 rounded-3 text-white shadow-sm" style="background: linear-gradient(135deg, #003366 0%, #0055a5 100%);">
+    <div class="container-fluid py-2">
+      <span class="badge bg-warning text-dark mb-2 fw-bold">STUDENT APPLICANT PORTAL</span>
+      <h1 class="display-6 fw-bold">Welcome, {{ (authService.currentUser$ | async)?.fullName }}!</h1>
+      <p class="col-md-9 fs-6 text-white-50">
+        Institute of Engineering &amp; Management (IEM) Online Admission Portal. Complete your admission form, upload required documents, and track approval status.
+      </p>
+    </div>
+  </div>
+
+  <!-- Live Application Status Card -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <h5 class="fw-bold mb-1">Your Admission Application Status</h5>
+          <div *ngIf="isLoading" class="text-muted small">Checking application record...</div>
+          <div *ngIf="!isLoading && application" class="d-flex align-items-center gap-2 mt-2">
+            <span class="fw-bold fs-5 text-dark">{{ application.programApplied }}</span>
+            <app-status-badge [status]="application.status"></app-status-badge>
+            <span class="text-muted small ms-2" *ngIf="application.submittedAt">
+              Submitted: {{ application.submittedAt | date:'mediumDate' }}
+            </span>
+          </div>
+          <div *ngIf="!isLoading && !application" class="text-muted small mt-1">
+            You have not started an application yet. Click below to begin your application for 2026-27.
+          </div>
+        </div>
+
+        <div>
+          <a
+            routerLink="/student/apply"
+            class="btn fw-semibold"
+            [ngClass]="application ? 'btn-primary' : 'btn-success'"
+          >
+            {{ application ? (application.status === 'draft' ? '✏️ Edit Draft' : '👁️ View Application') : '🚀 Start Application' }}
+          </a>
+        </div>
+      </div>
+
+      <!-- Remarks banner if present -->
+      <div *ngIf="application?.adminRemarks" class="alert alert-info mt-3 mb-0">
+        <strong>Reviewer Note:</strong> {{ application?.adminRemarks }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Action Cards -->
+  <div class="row g-4 mb-4">
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body p-4 text-center">
+          <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-inline-flex p-3 mb-3">
+            <span class="fs-3">📝</span>
+          </div>
+          <h5 class="card-title fw-bold">Admission Details</h5>
+          <p class="card-text text-muted small">
+            Personal details, academic scores, and chosen discipline.
+          </p>
+          <a routerLink="/student/apply" class="btn btn-outline-primary btn-sm px-4">
+            {{ application?.status === 'draft' ? 'Continue Form' : 'Review Details' }}
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body p-4 text-center">
+          <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-inline-flex p-3 mb-3">
+            <span class="fs-3">📄</span>
+          </div>
+          <h5 class="card-title fw-bold">Upload Documents</h5>
+          <p class="card-text text-muted small">
+            Attach class 10/12 marksheets, passport photo, and government ID proof.
+          </p>
+          <a routerLink="/student/documents" class="btn btn-outline-warning text-dark btn-sm px-4">
+            Manage Documents
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="card h-100 border-0 shadow-sm">
+        <div class="card-body p-4 text-center">
+          <div class="rounded-circle bg-success bg-opacity-10 text-success d-inline-flex p-3 mb-3">
+            <span class="fs-3">🔍</span>
+          </div>
+          <h5 class="card-title fw-bold">Review Timeline</h5>
+          <p class="card-text text-muted small">
+            Real-time status updates as administrative faculty review your submission.
+          </p>
+          <a routerLink="/student/apply" class="btn btn-outline-success btn-sm px-4">
+            Check Status
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

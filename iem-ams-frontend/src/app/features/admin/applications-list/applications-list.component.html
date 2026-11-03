@@ -1,0 +1,205 @@
+<div class="container py-4">
+  <!-- Page Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-danger fw-bold">ADMINISTRATION</span>
+        <span class="badge bg-secondary">Review Panel</span>
+      </div>
+      <h3 class="fw-bold mb-0">Admission Applications</h3>
+      <p class="text-muted small mb-0">Search, filter, and evaluate candidate submissions.</p>
+    </div>
+
+    <div>
+      <a routerLink="/admin/dashboard" class="btn btn-outline-secondary btn-sm">
+        &larr; Admin Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Search & Filter Card -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="row g-3">
+        <!-- Search input -->
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold" for="searchInput">Search Candidate</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light">🔍</span>
+            <input
+              id="searchInput"
+              type="text"
+              class="form-control"
+              placeholder="Name or Email address..."
+              [(ngModel)]="searchQuery"
+              (keyup.enter)="applyFilters()"
+            />
+          </div>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold" for="statusSelect">Filter by Status</label>
+          <select
+            id="statusSelect"
+            class="form-select"
+            [(ngModel)]="statusFilter"
+            (change)="applyFilters()"
+          >
+            <option value="">All Statuses</option>
+            <option value="draft">Draft</option>
+            <option value="submitted">Submitted</option>
+            <option value="under_review">Under Review</option>
+            <option value="accepted">Accepted / Selected</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+
+        <!-- Program Filter -->
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold" for="programSelect">Filter by Program</label>
+          <select
+            id="programSelect"
+            class="form-select"
+            [(ngModel)]="programFilter"
+            (change)="applyFilters()"
+          >
+            <option value="">All Programs</option>
+            <option *ngFor="let p of programs" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="col-md-2 d-flex align-items-end gap-2">
+          <button type="button" class="btn btn-primary w-100" (click)="applyFilters()">
+            Search
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            (click)="resetFilters()"
+            title="Reset filters"
+          >
+            ↺
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error alert -->
+  <div *ngIf="errorMessage" class="alert alert-danger" role="alert">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Applications Table Card -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+      <span class="fw-bold text-dark">
+        Showing Applications ({{ pagination.total }} Total)
+      </span>
+      <span *ngIf="isLoading" class="spinner-border spinner-border-sm text-primary" role="status"></span>
+    </div>
+
+    <div class="card-body p-0">
+      <!-- Empty state -->
+      <div *ngIf="!isLoading && applications.length === 0" class="text-center py-5 text-muted">
+        <span class="fs-1 d-block mb-2">🔍</span>
+        <h5>No applications match your criteria</h5>
+        <p class="small mb-0">Try clearing or adjusting your search filters above.</p>
+      </div>
+
+      <!-- Table -->
+      <div class="table-responsive" *ngIf="applications.length > 0">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light small text-uppercase">
+            <tr>
+              <th class="ps-4">Applicant</th>
+              <th>Program</th>
+              <th>Academic Score</th>
+              <th>Submission Date</th>
+              <th>Status</th>
+              <th class="text-end pe-4">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let app of applications">
+              <!-- Applicant Name & Email -->
+              <td class="ps-4">
+                <div class="fw-bold text-dark">{{ app.applicant.fullName }}</div>
+                <small class="text-muted">{{ app.applicant.email }}</small>
+              </td>
+
+              <!-- Program -->
+              <td>
+                <span class="badge bg-light text-primary border border-primary fw-semibold">
+                  {{ app.programApplied }}
+                </span>
+              </td>
+
+              <!-- Academic Score -->
+              <td>
+                <div *ngIf="app.academicInfo">
+                  <span class="fw-bold text-success">{{ app.academicInfo.percentage }}%</span>
+                  <small class="text-muted d-block">{{ app.academicInfo.lastBoard }} ({{ app.academicInfo.passingYear }})</small>
+                </div>
+                <span *ngIf="!app.academicInfo" class="text-muted small">&mdash;</span>
+              </td>
+
+              <!-- Submission Date -->
+              <td class="small">
+                <div *ngIf="app.submittedAt">
+                  {{ app.submittedAt | date:'mediumDate' }}
+                  <small class="text-muted d-block">{{ app.submittedAt | date:'shortTime' }}</small>
+                </div>
+                <span *ngIf="!app.submittedAt" class="badge bg-light text-secondary border">Not Submitted</span>
+              </td>
+
+              <!-- Status Badge -->
+              <td>
+                <app-status-badge [status]="app.status"></app-status-badge>
+              </td>
+
+              <!-- Action button -->
+              <td class="text-end pe-4">
+                <a
+                  [routerLink]="['/admin/applications', app._id]"
+                  class="btn btn-outline-primary btn-sm fw-semibold"
+                >
+                  Review Dossier &rarr;
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination Footer -->
+      <div
+        *ngIf="pagination.totalPages > 1"
+        class="card-footer bg-white border-top py-3 d-flex justify-content-between align-items-center"
+      >
+        <span class="small text-muted">
+          Page {{ pagination.page }} of {{ pagination.totalPages }} ({{ pagination.total }} applicants)
+        </span>
+        <div class="btn-group btn-group-sm">
+          <button
+            class="btn btn-outline-secondary"
+            [disabled]="pagination.page <= 1"
+            (click)="changePage(pagination.page - 1)"
+          >
+            &laquo; Prev
+          </button>
+          <button
+            class="btn btn-outline-secondary"
+            [disabled]="pagination.page >= pagination.totalPages"
+            (click)="changePage(pagination.page + 1)"
+          >
+            Next &raquo;
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

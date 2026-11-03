@@ -1,0 +1,26 @@
+.bg-iem {
+  background-color: var(--iem-primary, #003366) !important;
+}
+
+.navbar-brand:hover {
+  opacity: 0.95;
+}
+
+.nav-link.active {
+  font-weight: 600;
+  color: #ffc107 !important;
+}
+
+/* Notification popover */
+.notification-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 320px;
+  z-index: 1050;
+  margin-top: 8px;
+}
+
+.notification-item:hover {
+  background-color: #f1f5f9;
+}

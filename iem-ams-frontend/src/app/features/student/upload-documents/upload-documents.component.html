@@ -1,0 +1,465 @@
+<div class="document-upload-container py-4">
+  <div class="container">
+
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="text-center py-5">
+      <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+        <span class="visually-hidden">Loading documents...</span>
+      </div>
+      <h5 class="mt-3 text-secondary">Loading verification documents checklist...</h5>
+    </div>
+
+    <div *ngIf="!isLoading">
+
+      <!-- Top Header Card with IEM Branding -->
+      <div class="iem-brand-card card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div class="d-flex align-items-center gap-3">
+              <div class="iem-logo-box">
+                <span class="iem-logo-text">IEM</span>
+                <span class="iem-logo-sub">STAGE 2</span>
+              </div>
+              <div>
+                <div class="iem-session-pill mb-1">
+                  <span class="badge bg-iem-gold text-dark fw-bold">SESSION {{ application?.academicSession || '2026-2027' }}</span>
+                  <span class="ms-2">
+                    <app-status-badge [status]="application?.status || 'draft'"></app-status-badge>
+                  </span>
+                  <span *ngIf="application?.applicationNumber" class="badge bg-light text-dark border ms-2">
+                    Ref: {{ application?.applicationNumber }}
+                  </span>
+                </div>
+                <h2 class="iem-main-title mb-0">Upload Required Documents</h2>
+                <p class="text-muted small mb-0">
+                  Please upload clear and valid documents to complete your admission application for {{ application?.programApplied }} ({{ application?.department || 'Selected Department' }}).
+                </p>
+              </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                *ngIf="application?.status === 'draft'"
+                type="button"
+                class="btn btn-warning btn-sm d-flex align-items-center gap-1 fw-bold text-dark shadow-sm"
+                (click)="autoUploadDemoDocuments()"
+                [disabled]="isAutoUploadingDemo"
+                title="Automatically upload valid sample files for Photo, Signature, Marksheet, and Rank Card"
+              >
+                <span *ngIf="isAutoUploadingDemo" class="spinner-border spinner-border-sm me-1"></span>
+                <span>⚡</span> Auto-Upload Demo Documents
+              </button>
+              <a routerLink="/student/apply" class="btn btn-outline-primary btn-sm">
+                &larr; Edit Application Form
+              </a>
+              <a routerLink="/student/dashboard" class="btn btn-outline-secondary btn-sm">
+                Dashboard
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerts -->
+      <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <strong>✓ Success:</strong> {{ successMessage }}
+        <button type="button" class="btn-close" (click)="successMessage = ''"></button>
+      </div>
+
+      <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+        <strong>⚠️ Attention:</strong> {{ errorMessage }}
+        <button type="button" class="btn-close" (click)="errorMessage = ''"></button>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- STAGE: SUCCESS RECEIPT VIEW (If already submitted)             -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div *ngIf="activeStage === 'success'" class="submission-success-pane">
+        <div class="card border-0 shadow-lg submission-card mb-4 printable-receipt">
+          <div class="card-header bg-iem text-white text-center py-4">
+            <div class="success-badge-circle mx-auto mb-3">✓</div>
+            <h2 class="fw-bold text-white mb-1">Application Submitted Successfully</h2>
+            <p class="mb-0 text-white-50">Institute of Engineering &amp; Management (IEM), Kolkata</p>
+          </div>
+
+          <div class="card-body p-4 p-md-5">
+            <!-- Reference Number Highlight Box -->
+            <div class="ref-number-banner text-center p-3 mb-4 rounded-3 border">
+              <span class="text-muted text-uppercase small fw-bold d-block">Official Application Reference Number</span>
+              <span class="display-6 fw-bold text-primary">{{ application?.applicationNumber || 'IEM-2026-SUBMITTED' }}</span>
+              <div class="text-muted small mt-1">Please retain this reference number for all future counseling and admission correspondence.</div>
+            </div>
+
+            <div class="row g-4 mb-4">
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded-3 h-100">
+                  <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">Applicant Profile</h6>
+                  <p class="mb-1"><strong>Full Name:</strong> {{ application?.personalDetails?.fullName || application?.applicant?.fullName }}</p>
+                  <p class="mb-1"><strong>Registered Email:</strong> {{ application?.contactDetails?.email || application?.applicant?.email }}</p>
+                  <p class="mb-1"><strong>Primary Phone:</strong> {{ application?.contactDetails?.primaryMobile || 'Provided' }}</p>
+                  <p class="mb-0"><strong>Category:</strong> {{ application?.personalDetails?.category || 'General' }}</p>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="p-3 bg-light rounded-3 h-100">
+                  <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">Program &amp; Submission Details</h6>
+                  <p class="mb-1"><strong>Program:</strong> {{ application?.programApplied }}</p>
+                  <p class="mb-1"><strong>Department:</strong> {{ application?.department }}</p>
+                  <p class="mb-1"><strong>Academic Session:</strong> {{ application?.academicSession }}</p>
+                  <p class="mb-0"><strong>Submitted Date:</strong> {{ application?.submittedAt | date:'medium' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Uploaded Documents Verified Checklist -->
+            <h6 class="fw-bold text-primary mb-3">📁 Uploaded Verification Documents Record</h6>
+            <div class="table-responsive mb-4">
+              <table class="table table-bordered align-middle table-sm">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Document Category</th>
+                    <th>File Name</th>
+                    <th>Size</th>
+                    <th>Status</th>
+                    <th class="no-print">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let doc of uploadedDocuments; let i = index">
+                    <td>{{ i + 1 }}</td>
+                    <td class="fw-semibold">{{ doc.docType }}</td>
+                    <td>{{ doc.fileName }}</td>
+                    <td>{{ formatFileSize(doc.sizeBytes) }}</td>
+                    <td><span class="badge bg-success">✓ Verified on Server</span></td>
+                    <td class="no-print">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm py-0 px-2"
+                        (click)="downloadDocument(doc._id, doc.fileName)"
+                      >
+                        Download
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Official declaration note -->
+            <div class="p-3 bg-light rounded-3 border small text-muted mb-4">
+              <strong>Official Notice:</strong> Your admission dossier is now undergoing academic and identity verification by the IEM Admissions Directorate. You will be notified via email regarding document verification status, merit ranking, and physical counseling schedule.
+            </div>
+
+            <!-- Actions Toolbar (Hidden when printing) -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 no-print">
+              <a routerLink="/student/dashboard" class="btn btn-outline-secondary px-4">
+                &larr; Return to Dashboard
+              </a>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" (click)="printReceipt()">
+                  🖨️ Print / Download Receipt (PDF)
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- STAGE 1: DOCUMENT UPLOADS CARDS                                -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div *ngIf="activeStage === 'upload'">
+
+        <!-- Completion Status Summary Bar -->
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-body p-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+              <div>
+                <h5 class="fw-bold mb-1 text-primary">Verification Checklist Status</h5>
+                <p class="text-muted small mb-0">
+                  All mandatory items marked with a red asterisk (<span class="text-danger">*</span>) must be uploaded before final submission.
+                </p>
+              </div>
+              <div class="d-flex align-items-center flex-wrap gap-3">
+                <div class="text-end">
+                  <span class="fw-bold fs-5" [class.text-success]="allRequiredUploaded" [class.text-warning]="!allRequiredUploaded">
+                    {{ docStatus?.uploadedRequired || 0 }} / {{ docStatus?.totalRequired || 4 }}
+                  </span>
+                  <div class="small text-muted">Required Uploads Completed</div>
+                </div>
+
+                <button
+                  *ngIf="!allRequiredUploaded"
+                  type="button"
+                  class="btn btn-warning fw-bold px-3 py-2 text-dark shadow-sm d-flex align-items-center gap-1"
+                  (click)="autoUploadDemoDocuments()"
+                  [disabled]="isAutoUploadingDemo"
+                  title="Upload sample files for testing without choosing files from disk"
+                >
+                  <span *ngIf="isAutoUploadingDemo" class="spinner-border spinner-border-sm me-1"></span>
+                  <span>⚡</span> Auto-Upload Demo Files
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-primary fw-bold px-4 py-2"
+                  [disabled]="!allRequiredUploaded"
+                  (click)="goToStage('review')"
+                >
+                  Continue to Final Review &rarr;
+                </button>
+              </div>
+            </div>
+
+            <!-- Progress bar -->
+            <div class="progress mt-3" style="height: 8px;">
+              <div
+                class="progress-bar"
+                [class.bg-success]="allRequiredUploaded"
+                [class.bg-primary]="!allRequiredUploaded"
+                role="progressbar"
+                [style.width.%]="((docStatus?.uploadedRequired || 0) / (docStatus?.totalRequired || 1)) * 100"
+              ></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Document Cards Grid -->
+        <div class="row g-4 mb-4">
+          <div *ngFor="let card of documentCards" class="col-md-6 col-lg-4">
+            <div
+              class="card h-100 border-0 shadow-sm doc-upload-card"
+              [class.uploaded]="card.uploadedDoc"
+              [class.dragging]="card.isDragging"
+              (dragover)="onDragOver($event, card)"
+              (dragleave)="onDragLeave($event, card)"
+              (drop)="onFileDrop($event, card)"
+            >
+              <div class="card-body p-4 d-flex flex-column">
+
+                <!-- Card Header -->
+                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                  <h6 class="fw-bold text-dark mb-0">{{ card.title }}</h6>
+                  <span
+                    class="badge"
+                    [ngClass]="card.required ? 'bg-danger' : 'bg-secondary'"
+                  >
+                    {{ card.required ? 'Required *' : 'Optional' }}
+                  </span>
+                </div>
+
+                <p class="text-muted small mb-3 flex-grow-1">{{ card.description }}</p>
+
+                <!-- If Document Already Uploaded -->
+                <div *ngIf="card.uploadedDoc" class="uploaded-doc-box p-3 rounded-3 bg-light-green border border-success mb-3">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="text-success fw-bold fs-5">✓</span>
+                    <strong class="text-success small">Document Uploaded</strong>
+                  </div>
+                  <div class="text-truncate small fw-semibold text-dark" [title]="card.uploadedDoc.fileName">
+                    📄 {{ card.uploadedDoc.fileName }}
+                  </div>
+                  <div class="text-muted small mt-1">
+                    Size: {{ formatFileSize(card.uploadedDoc.sizeBytes) }}
+                  </div>
+
+                  <div class="d-flex gap-2 mt-3">
+                    <button
+                      type="button"
+                      class="btn btn-outline-primary btn-sm flex-fill"
+                      (click)="downloadDocument(card.uploadedDoc._id, card.uploadedDoc.fileName)"
+                    >
+                      👁️ View / Download
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm"
+                      (click)="removeDocument(card.uploadedDoc._id, card)"
+                      title="Remove document"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Upload Drag-and-Drop Dropzone -->
+                <div class="dropzone p-3 text-center rounded-3 border-dashed">
+                  <div *ngIf="card.uploading" class="py-2">
+                    <div class="spinner-border spinner-border-sm text-primary mb-1" role="status"></div>
+                    <div class="small text-muted">Uploading file securely...</div>
+                  </div>
+
+                  <div *ngIf="!card.uploading">
+                    <div class="dropzone-icon fs-3 mb-1">📂</div>
+                    <div class="small fw-semibold text-dark">
+                      {{ card.uploadedDoc ? 'Replace with new file' : 'Drag & drop file here' }}
+                    </div>
+                    <div class="text-muted" style="font-size: 0.75rem;">
+                      {{ card.acceptedFormats }} &bull; Max {{ card.maxSizeLabel }}
+                    </div>
+
+                    <!-- Hidden File Input -->
+                    <input
+                      type="file"
+                      [id]="'fileInput_' + card.docType"
+                      class="d-none"
+                      [accept]="'.pdf,.jpg,.jpeg,.png'"
+                      (change)="onFileInputChange($event, card)"
+                    />
+
+                    <label
+                      [for]="'fileInput_' + card.docType"
+                      class="btn btn-outline-primary btn-sm mt-2 px-3 cursor-pointer"
+                    >
+                      Browse Files
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Action CTA -->
+        <div class="card border-0 shadow-sm p-4 bg-light-blue rounded-3 text-center">
+          <div class="col-md-8 mx-auto">
+            <h5 class="fw-bold text-primary mb-1">Done Uploading Required Documents?</h5>
+            <p class="small text-dark mb-3">
+              Proceed to review your entire dossier, sign the official declaration, and finalize your admission application.
+            </p>
+            <button
+              type="button"
+              class="btn btn-primary btn-lg px-5 py-3 fw-bold shadow-sm"
+              [disabled]="!allRequiredUploaded"
+              (click)="goToStage('review')"
+            >
+              Continue to Final Review &amp; Declaration &rarr;
+            </button>
+            <div *ngIf="!allRequiredUploaded" class="small text-danger mt-2">
+              * Please upload all mandatory documents above before proceeding.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <!-- STAGE 2: FINAL REVIEW & FORMAL SUBMISSION                      -->
+      <!-- ════════════════════════════════════════════════════════════════ -->
+      <div *ngIf="activeStage === 'review'">
+        <div class="card border-0 shadow-sm mb-4">
+          <div class="card-header bg-iem text-white p-3 d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-0 fw-semibold">⚖️ Step 6: Final Review &amp; Official Submission</h5>
+              <p class="small text-white-50 mb-0">Carefully inspect all sections before placing your electronic submission.</p>
+            </div>
+            <button type="button" class="btn btn-outline-light btn-sm" (click)="goToStage('upload')">
+              &larr; Back to Uploads
+            </button>
+          </div>
+
+          <div class="card-body p-4">
+
+            <!-- Summary 1: Program & Applicant -->
+            <div class="p-3 bg-light rounded-3 border mb-3">
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                <h6 class="fw-bold text-primary mb-0">Program &amp; Applicant Overview</h6>
+                <a routerLink="/student/apply" class="btn btn-outline-primary btn-sm py-0">Edit Details</a>
+              </div>
+              <div class="row g-2 small">
+                <div class="col-md-4"><strong>Applicant:</strong> {{ application?.personalDetails?.fullName || application?.applicant?.fullName }}</div>
+                <div class="col-md-4"><strong>Program:</strong> {{ application?.programApplied }}</div>
+                <div class="col-md-4"><strong>Department:</strong> {{ application?.department }}</div>
+                <div class="col-md-4"><strong>Session:</strong> {{ application?.academicSession }}</div>
+                <div class="col-md-4"><strong>Date of Birth:</strong> {{ application?.personalDetails?.dateOfBirth | date:'mediumDate' }}</div>
+                <div class="col-md-4"><strong>Category:</strong> {{ application?.personalDetails?.category || 'General' }}</div>
+              </div>
+            </div>
+
+            <!-- Summary 2: Academic Scores -->
+            <div class="p-3 bg-light rounded-3 border mb-3">
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                <h6 class="fw-bold text-primary mb-0">Academic Qualification Breakdown</h6>
+                <a routerLink="/student/apply" class="btn btn-outline-primary btn-sm py-0">Edit Academic Info</a>
+              </div>
+              <div class="row g-2 small">
+                <div class="col-md-6 border-end">
+                  <div class="fw-bold text-dark">Class 10 (Secondary)</div>
+                  <div>Board: {{ application?.academicDetails?.class10?.board }} &bull; Percentage: <strong>{{ application?.academicDetails?.class10?.percentage }}%</strong></div>
+                  <div>School: {{ application?.academicDetails?.class10?.schoolName }}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="fw-bold text-dark">Class 12 (Higher Secondary)</div>
+                  <div>Board: {{ application?.academicDetails?.class12?.board }} &bull; Percentage: <strong>{{ application?.academicDetails?.class12?.percentage }}%</strong></div>
+                  <div>School: {{ application?.academicDetails?.class12?.schoolName }}</div>
+                  <div>Physics: {{ application?.academicDetails?.class12?.physicsMarks }} &bull; Chemistry: {{ application?.academicDetails?.class12?.chemistryMarks }} &bull; Math: {{ application?.academicDetails?.class12?.mathMarks }}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Summary 3: Uploaded Documents Checklist -->
+            <div class="p-3 bg-light rounded-3 border mb-4">
+              <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                <h6 class="fw-bold text-primary mb-0">Uploaded Verification Documents ({{ uploadedDocuments.length }})</h6>
+                <button type="button" class="btn btn-outline-primary btn-sm py-0" (click)="goToStage('upload')">Replace Documents</button>
+              </div>
+              <div class="row g-2">
+                <div *ngFor="let doc of uploadedDocuments" class="col-md-6">
+                  <div class="p-2 bg-white rounded border d-flex align-items-center justify-content-between small">
+                    <div>
+                      <span class="text-success fw-bold">✓</span>
+                      <strong class="ms-1">{{ doc.docType }}</strong>: {{ doc.fileName }}
+                    </div>
+                    <span class="text-muted">{{ formatFileSize(doc.sizeBytes) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mandatory Legal Declaration Checkbox -->
+            <div class="declaration-box p-4 rounded-3 border border-primary bg-light-blue mb-4">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="declarationCheckbox"
+                  [(ngModel)]="declarationAgreed"
+                />
+                <label class="form-check-label fw-bold text-dark" for="declarationCheckbox">
+                  "I hereby declare that the information and documents provided by me are true and correct to the best of my knowledge."
+                </label>
+              </div>
+              <p class="small text-muted mb-0 mt-2">
+                I understand that any misrepresentation or falsification of marks, certificates, or admission credentials will result in immediate disqualification and cancellation of admission without refund of fees.
+              </p>
+            </div>
+
+            <!-- Final Submission CTA Buttons -->
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <button type="button" class="btn btn-outline-secondary px-4" (click)="goToStage('upload')">
+                &larr; Back to Documents
+              </button>
+
+              <button
+                type="button"
+                class="btn btn-success btn-lg px-5 py-3 fw-bold shadow"
+                [disabled]="!declarationAgreed || isSubmitting"
+                (click)="submitFinalApplication()"
+              >
+                <span *ngIf="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                <span>Submit Admission Application</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>

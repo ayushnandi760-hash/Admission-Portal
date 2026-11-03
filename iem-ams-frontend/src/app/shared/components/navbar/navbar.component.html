@@ -1,0 +1,161 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-iem shadow-sm sticky-top">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" routerLink="/">
+      <span class="badge bg-warning text-dark fw-bold fs-6">IEM</span>
+      <span class="fw-semibold">Admission Portal</span>
+    </a>
+
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarContent"
+      aria-controls="navbarContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarContent">
+      <!-- Authenticated links -->
+      <ng-container *ngIf="authService.currentUser$ | async as user; else guestLinks">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <!-- Student Links -->
+          <ng-container *ngIf="user.role === 'student'">
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/student/dashboard" routerLinkActive="active">
+                Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/student/apply" routerLinkActive="active">
+                My Application
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/student/documents" routerLinkActive="active">
+                Documents
+              </a>
+            </li>
+          </ng-container>
+
+          <!-- Admin Links -->
+          <ng-container *ngIf="user.role === 'admin'">
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/admin/dashboard" routerLinkActive="active">
+                Admin Dashboard
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/admin/applications" routerLinkActive="active">
+                All Applications
+              </a>
+            </li>
+          </ng-container>
+        </ul>
+
+        <!-- Right Side: Notifications bell + Profile + Logout -->
+        <div class="d-flex align-items-center gap-3">
+          <!-- Notification Bell Dropdown (Student & Admin) -->
+          <div class="position-relative">
+            <button
+              type="button"
+              class="btn btn-outline-light btn-sm position-relative px-2 py-1"
+              (click)="toggleNotifications()"
+              title="Notifications"
+            >
+              🔔
+              <span
+                *ngIf="(notifService.unreadCount$ | async) as unread"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+              >
+                {{ unread }}
+              </span>
+            </button>
+
+            <!-- Notification Drawer Dropdown -->
+            <div
+              *ngIf="showNotifications"
+              class="notification-menu shadow-lg rounded-3 bg-white border"
+            >
+              <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light rounded-top-3">
+                <span class="fw-bold small text-dark">🔔 Recent Notifications</span>
+                <button
+                  type="button"
+                  class="btn btn-link btn-sm text-decoration-none p-0 text-muted small"
+                  (click)="markAllAsRead()"
+                  *ngIf="notifications.length > 0"
+                >
+                  Mark all as read
+                </button>
+              </div>
+
+              <!-- Notifications list -->
+              <div class="notification-list" style="max-height: 280px; overflow-y: auto;">
+                <div *ngIf="isLoadingNotifs" class="text-center py-4 text-muted small">
+                  <span class="spinner-border spinner-border-sm me-1"></span> Loading...
+                </div>
+
+                <div
+                  *ngIf="!isLoadingNotifs && notifications.length === 0"
+                  class="text-center py-4 text-muted small"
+                >
+                  No notifications yet.
+                </div>
+
+                <div
+                  *ngFor="let notif of notifications"
+                  class="p-3 border-bottom notification-item"
+                  [ngClass]="{ 'bg-light': !notif.isRead }"
+                >
+                  <div class="d-flex align-items-start gap-2">
+                    <span class="fs-6 mt-1">{{ notif.isRead ? '✉️' : '📩' }}</span>
+                    <div class="flex-grow-1">
+                      <div class="small text-dark" [ngClass]="{ 'fw-bold': !notif.isRead }">
+                        {{ notif.message }}
+                      </div>
+                      <small class="text-muted" style="font-size: 0.75rem;">
+                        {{ notif.createdAt | date:'short' }}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User badge -->
+          <div class="text-end text-light d-none d-sm-block">
+            <div class="fw-semibold small">{{ user.fullName }}</div>
+            <span
+              class="badge text-uppercase"
+              [ngClass]="user.role === 'admin' ? 'bg-danger' : 'bg-info text-dark'"
+            >
+              {{ user.role }}
+            </span>
+          </div>
+
+          <!-- Sign Out -->
+          <button class="btn btn-outline-light btn-sm" (click)="logout()">
+            Sign Out
+          </button>
+        </div>
+      </ng-container>
+
+      <!-- Guest links (not logged in) -->
+      <ng-template #guestLinks>
+        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 gap-2">
+          <li class="nav-item">
+            <a class="nav-link" routerLink="/login" routerLinkActive="active">Sign In</a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-warning btn-sm text-dark fw-semibold" routerLink="/register">
+              Apply Now (Register)
+            </a>
+          </li>
+        </ul>
+      </ng-template>
+    </div>
+  </div>
+</nav>
