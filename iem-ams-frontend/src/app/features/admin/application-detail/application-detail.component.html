@@ -105,19 +105,11 @@
         </div>
       </div>
 
-      <!-- Auto-Redirect Countdown -->
-      <div class="text-muted small mb-4" *ngIf="countdownTimer">
-        <span>Automatically moving to Admin Dashboard in <strong>{{ countdownSeconds }}s</strong>...</span>
-        <button type="button" class="btn btn-link btn-sm p-0 ms-2 text-decoration-none fw-semibold" (click)="cancelCountdown()">
-          [Stay on this page]
-        </button>
-      </div>
-
-      <!-- Primary Action Buttons -->
-      <div class="d-flex justify-content-center flex-wrap gap-3">
+      <!-- Primary Action Buttons (stays on screen until clicked) -->
+      <div class="d-flex justify-content-center flex-wrap gap-3 mt-2">
         <button
           type="button"
-          class="btn btn-primary btn-lg px-5 py-3 fw-bold shadow-sm d-flex align-items-center gap-2"
+          class="btn btn-primary btn-lg px-5 py-3 fw-bold shadow d-flex align-items-center gap-2"
           (click)="moveToDashboard()"
         >
           <span class="fs-5">📊</span> Move to Dashboard
@@ -127,7 +119,7 @@
         </a>
         <button
           type="button"
-          (click)="isDecisionSubmitted = false; cancelCountdown()"
+          (click)="isDecisionSubmitted = false"
           class="btn btn-outline-dark btn-lg px-4 py-3"
         >
           ← Return to Candidate Dossier

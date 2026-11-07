@@ -251,10 +251,50 @@ const sendAdmissionStatusEmail = async ({ to, studentName, program, status, rema
           console.log(`[Email Service] ✅ Email delivered via Resend HTTPS! ID: ${resData.id}`);
           return { success: true, messageId: resData.id, recipient: to, provider: 'resend' };
         } else {
-          console.warn(`[Email Service] Resend HTTPS responded with error:`, resData);
+          const resendErrMessage = resData.message || (resData.error && resData.error.message) || JSON.stringify(resData);
+          console.warn(`[Email Service] Resend HTTPS returned error:`, resendErrMessage);
+          return { success: false, error: `Resend: ${resendErrMessage}`, recipient: to, provider: 'resend' };
         }
       } catch (resendErr) {
-        console.warn(`[Email Service] Resend HTTPS dispatch failed (${resendErr.message}), falling back to direct SMTP...`);
+        console.warn(`[Email Service] Resend HTTPS network error (${resendErr.message}), falling back to direct SMTP...`);
+      }
+    }
+
+    // ─── 1b. Brevo HTTPS API (Port 443 - Bypasses Render Free Tier SMTP Blocks) ───
+    const brevoApiKey = (process.env.BREVO_API_KEY || '').trim();
+    if (brevoApiKey) {
+      try {
+        console.log(`[Email Service] Dispatching via Brevo HTTPS API (Port 443) to: ${to}...`);
+        const recipientList = to
+          .split(',')
+          .map((e) => ({ email: e.trim() }))
+          .filter((r) => r.email);
+        const brevoSender = (process.env.SMTP_USER || 'ayushnandi2024@gmail.com').trim();
+
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: 'IEM Admissions Cell', email: brevoSender },
+            to: recipientList,
+            subject,
+            htmlContent,
+            textContent: plainText,
+          }),
+        });
+
+        const resData = await response.json();
+        if (response.ok && resData.messageId) {
+          console.log(`[Email Service] ✅ Email delivered via Brevo HTTPS! ID: ${resData.messageId}`);
+          return { success: true, messageId: resData.messageId, recipient: to, provider: 'brevo' };
+        } else {
+          console.warn(`[Email Service] Brevo HTTPS returned:`, resData);
+        }
+      } catch (brevoErr) {
+        console.warn(`[Email Service] Brevo HTTPS dispatch error: ${brevoErr.message}`);
       }
     }
 

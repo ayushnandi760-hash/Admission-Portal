@@ -48,10 +48,6 @@ export class ApplicationDetailComponent implements OnInit, OnDestroy {
   selectedStatus: ApplicationStatus = 'under_review';
   adminRemarks = '';
 
-  // Countdown timer to move to dashboard
-  countdownSeconds = 8;
-  countdownTimer: any = null;
-
   ngOnInit(): void {
     this.applicationId = this.route.snapshot.paramMap.get('id') || '';
     if (this.applicationId) {
@@ -59,9 +55,7 @@ export class ApplicationDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.clearTimer();
-  }
+  ngOnDestroy(): void {}
 
   loadDossier(): void {
     this.isLoading = true;
@@ -101,7 +95,6 @@ export class ApplicationDetailComponent implements OnInit, OnDestroy {
             res.message ||
             `Application status updated to "${res.data.status?.toUpperCase()}". Notification email dispatched to ${this.recipientEmail}.`;
           this.isDecisionSubmitted = true;
-          this.startCountdown();
           window.scrollTo({ top: 0, behavior: 'instant' });
         },
         error: (err) => {
@@ -111,30 +104,7 @@ export class ApplicationDetailComponent implements OnInit, OnDestroy {
       });
   }
 
-  startCountdown(): void {
-    this.clearTimer();
-    this.countdownSeconds = 5;
-    this.countdownTimer = setInterval(() => {
-      this.countdownSeconds--;
-      if (this.countdownSeconds <= 0) {
-        this.moveToDashboard();
-      }
-    }, 1000);
-  }
-
-  cancelCountdown(): void {
-    this.clearTimer();
-  }
-
-  clearTimer(): void {
-    if (this.countdownTimer) {
-      clearInterval(this.countdownTimer);
-      this.countdownTimer = null;
-    }
-  }
-
   moveToDashboard(): void {
-    this.clearTimer();
     this.router.navigate(['/admin/dashboard']);
   }
 
