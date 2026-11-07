@@ -140,32 +140,62 @@ const updateApplicationStatus = async (req, res) => {
       console.error('[Student Decision Notification Error]:', notifErr.message);
     }
 
-    // 2. Dispatch automated email notification (with 6s timeout so UI never hangs)
+    // 2. Determine candidate contact details & target recipient email
+    const candidateEmails = [];
+    if (application.contactDetails?.email && application.contactDetails.email.trim()) {
+      candidateEmails.push(application.contactDetails.email.trim());
+    }
+    if (application.applicant?.email && application.applicant.email.trim()) {
+      if (!candidateEmails.includes(application.applicant.email.trim())) {
+        candidateEmails.push(application.applicant.email.trim());
+      }
+    }
+    const recipientTo = candidateEmails.length > 0 ? candidateEmails.join(', ') : (application.applicant?.email || '');
+    const candidateName =
+      application.personalDetails?.fullName ||
+      application.applicant?.fullName ||
+      'Applicant';
+    const programName =
+      application.programSelection?.program ||
+      application.programSelection?.programName ||
+      application.programApplied ||
+      'B.Tech';
+
+    // 3. Dispatch automated email notification (with 12s safety timeout)
     let emailResult = null;
     try {
       emailResult = await Promise.race([
         sendAdmissionStatusEmail({
-          to: application.applicant.email,
-          studentName: application.applicant.fullName,
-          program: application.programApplied,
+          to: recipientTo,
+          studentName: candidateName,
+          program: programName,
           status,
           remarks: adminRemarks,
         }),
         new Promise((resolve) =>
-          setTimeout(() => resolve({ success: false, error: 'Email timeout - queued' }), 6000)
+          setTimeout(() => resolve({ success: false, error: 'Email delivery timeout (network delay)' }), 12000)
         ),
       ]);
     } catch (emailErr) {
       console.error('[Email Dispatch Error]:', emailErr.message);
+      emailResult = { success: false, error: emailErr.message };
     }
 
     const responseData = application.toObject();
+    responseData.emailResult = emailResult || { success: false, error: 'Email service unconfigured' };
+    responseData.emailDelivered = emailResult ? emailResult.success : false;
+    responseData.recipientEmail = recipientTo;
+    responseData.emailErrorMessage = emailResult && !emailResult.success ? emailResult.error : '';
     if (emailResult && emailResult.previewUrl) {
       responseData.emailPreviewUrl = emailResult.previewUrl;
     }
 
+    const emailStatusNote = responseData.emailDelivered
+      ? `Decision email sent to ${recipientTo}.`
+      : `In-app notification delivered.${responseData.emailErrorMessage ? ` (Email issue: ${responseData.emailErrorMessage})` : ''}`;
+
     return sendSuccess(res, {
-      message: `Application status updated to '${status}'. ${emailResult?.success ? `An email notification was sent to ${application.applicant.email}.` : ''}`,
+      message: `Application status updated to '${status}'. ${emailStatusNote}`,
       data: responseData,
     });
   } catch (err) {

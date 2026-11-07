@@ -10,61 +10,65 @@
 
 const nodemailer = require('nodemailer');
 
-let cachedTransporter = null;
-
+/**
+ * Creates and returns an operational nodemailer transporter.
+ * Prioritizes live Gmail / SMTP credentials when SMTP_USER and SMTP_PASS are set in .env.
+ * Falls back to Ethereal sandbox test mailbox if no credentials are configured.
+ */
 const getTransporter = async () => {
-  if (cachedTransporter) return cachedTransporter;
-
   const user = (process.env.SMTP_USER || '').trim();
   const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
   const host = (process.env.SMTP_HOST || '').trim();
-  const port = parseInt(process.env.SMTP_PORT, 10) || 587;
+  const port = parseInt(process.env.SMTP_PORT, 10) || 465;
 
   if (user && pass) {
-    // Configured live SMTP (Gmail or custom SMTP)
-    if (host.includes('gmail') || user.endsWith('@gmail.com')) {
-      cachedTransporter = nodemailer.createTransport({
+    // Configured live Gmail SMTP
+    if (host.includes('gmail') || user.endsWith('@gmail.com') || !host) {
+      return nodemailer.createTransport({
         service: 'gmail',
         auth: {
           user,
           pass,
         },
-        connectionTimeout: 8000,
-        greetingTimeout: 5000,
-        socketTimeout: 10000,
-      });
-      console.log(`[Email Service] Configured live Gmail SMTP with sender: ${user}`);
-    } else {
-      cachedTransporter = nodemailer.createTransport({
-        host: host || 'smtp.gmail.com',
-        port,
-        secure: port === 465,
-        auth: {
-          user,
-          pass,
+        tls: {
+          rejectUnauthorized: false,
         },
-        connectionTimeout: 8000,
-        greetingTimeout: 5000,
-        socketTimeout: 10000,
+        connectionTimeout: 12000,
+        greetingTimeout: 8000,
+        socketTimeout: 15000,
       });
-      console.log(`[Email Service] Configured live SMTP (${host}:${port}) with sender: ${user}`);
     }
-  } else {
-    // Fallback: Ethereal test inbox for development without live SMTP
-    const testAccount = await nodemailer.createTestAccount();
-    cachedTransporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
+
+    // Configured generic custom SMTP host
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
       auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+        user,
+        pass,
       },
+      tls: {
+        rejectUnauthorized: false,
+      },
+      connectionTimeout: 12000,
+      greetingTimeout: 8000,
+      socketTimeout: 15000,
     });
-    console.log(`[Email Service] Running in Test Mode via Ethereal Mailbox (${testAccount.user})`);
   }
 
-  return cachedTransporter;
+  // Development Fallback: Ethereal test inbox
+  console.log('[Email Service] No SMTP_USER configured. Provisioning Ethereal test account...');
+  const testAccount = await nodemailer.createTestAccount();
+  return nodemailer.createTransport({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    secure: false,
+    auth: {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
+  });
 };
 
 /**
@@ -79,9 +83,6 @@ const getTransporter = async () => {
  */
 const sendAdmissionStatusEmail = async ({ to, studentName, program, status, remarks }) => {
   try {
-    const transporter = await getTransporter();
-    const user = (process.env.SMTP_USER || '').trim();
-
     let subject = '';
     let statusHeading = '';
     let statusColor = '#003366';
@@ -92,7 +93,7 @@ const sendAdmissionStatusEmail = async ({ to, studentName, program, status, rema
       case 'accepted':
         subject = `🎉 Admission Selection Offer: ${program} at IEM Kolkata`;
         statusHeading = 'Congratulations! You Have Been Selected';
-        statusColor = '#198754'; // Green
+        statusColor = '#198754';
         statusBadgeText = 'SELECTION OFFER CONFIRMED';
         bodyMessage = `
           We are pleased to inform you that your application for admission to 
@@ -104,7 +105,7 @@ const sendAdmissionStatusEmail = async ({ to, studentName, program, status, rema
       case 'rejected':
         subject = `Admission Application Status: ${program} - IEM Kolkata`;
         statusHeading = 'Admission Application Status';
-        statusColor = '#dc3545'; // Red
+        statusColor = '#dc3545';
         statusBadgeText = 'NOT SELECTED';
         bodyMessage = `
           Thank you for your interest in the <strong>${program}</strong> program at the 
@@ -117,7 +118,7 @@ const sendAdmissionStatusEmail = async ({ to, studentName, program, status, rema
       case 'under_review':
         subject = `Application Update: ${program} Under Review - IEM Kolkata`;
         statusHeading = 'Application Under Review';
-        statusColor = '#fd7e14'; // Orange
+        statusColor = '#fd7e14';
         statusBadgeText = 'UNDER VERIFICATION';
         bodyMessage = `
           Your application for <strong>${program}</strong> has been received and is currently 
@@ -220,6 +221,46 @@ const sendAdmissionStatusEmail = async ({ to, studentName, program, status, rema
       </html>
     `;
 
+    const plainText = `Dear ${studentName},\n\nYour application for ${program} at IEM Kolkata status is now: ${status.toUpperCase()}.\n\n${remarks ? `Remarks: ${remarks}\n\n` : ''}Log in to your portal to view details: ${process.env.CLIENT_ORIGIN || 'http://localhost:4200'}\n\nIEM Kolkata Admission Cell`;
+
+    // ─── 1. HTTPS Provider Check (Resend API over Port 443 - Bypasses Render Free Tier SMTP Blocks) ───
+    const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
+    if (resendApiKey) {
+      try {
+        console.log(`[Email Service] Dispatching via Resend HTTPS API (Port 443) to: ${to}...`);
+        const recipientList = to.split(',').map((e) => e.trim()).filter(Boolean);
+        const resendFrom = process.env.RESEND_FROM || 'IEM Admissions <onboarding@resend.dev>';
+
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: resendFrom,
+            to: recipientList,
+            subject,
+            html: htmlContent,
+            text: plainText,
+          }),
+        });
+
+        const resData = await response.json();
+        if (response.ok && resData.id) {
+          console.log(`[Email Service] ✅ Email delivered via Resend HTTPS! ID: ${resData.id}`);
+          return { success: true, messageId: resData.id, recipient: to, provider: 'resend' };
+        } else {
+          console.warn(`[Email Service] Resend HTTPS responded with error:`, resData);
+        }
+      } catch (resendErr) {
+        console.warn(`[Email Service] Resend HTTPS dispatch failed (${resendErr.message}), falling back to direct SMTP...`);
+      }
+    }
+
+    // ─── 2. Standard Nodemailer SMTP ───
+    const transporter = await getTransporter();
+    const user = (process.env.SMTP_USER || '').trim();
     const sender = user ? `"IEM Admissions" <${user}>` : (process.env.EMAIL_FROM || '"IEM Admissions" <admissions@iem.edu.in>');
 
     const info = await transporter.sendMail({
@@ -227,20 +268,57 @@ const sendAdmissionStatusEmail = async ({ to, studentName, program, status, rema
       to,
       subject,
       html: htmlContent,
-      text: `Dear ${studentName},\n\nYour application for ${program} at IEM Kolkata status is now: ${status.toUpperCase()}.\n\n${remarks ? `Remarks: ${remarks}\n\n` : ''}Log in to your portal to view details: ${process.env.CLIENT_ORIGIN || 'http://localhost:4200'}\n\nIEM Kolkata Admission Cell`,
+      text: plainText,
     });
 
-    console.log(`[Email Service] ✅ Real email sent to ${to} (Message ID: ${info.messageId})`);
+    console.log(`[Email Service] ✅ Email dispatched to ${to} (Message ID: ${info.messageId})`);
 
     const previewUrl = nodemailer.getTestMessageUrl(info);
     if (previewUrl) {
       console.log(`[Email Service] 🔗 Ethereal Email Preview URL: ${previewUrl}`);
     }
 
-    return { success: true, messageId: info.messageId, previewUrl };
+    return { success: true, messageId: info.messageId, previewUrl, recipient: to };
   } catch (error) {
-    console.error(`[Email Service Error] Failed to send email to ${to}:`, error.message);
-    return { success: false, error: error.message };
+    console.error(`[Email Service Error] Primary dispatch to ${to} failed:`, error.message);
+
+    // Attempt fallback with explicit host & port 587 STARTTLS
+    const user = (process.env.SMTP_USER || '').trim();
+    const pass = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+    if (user && pass) {
+      try {
+        console.log(`[Email Service] Retrying via fallback smtp.gmail.com:587...`);
+        const fallbackTransporter = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: { user, pass },
+          tls: { rejectUnauthorized: false },
+          connectionTimeout: 10000,
+          socketTimeout: 15000,
+        });
+
+        const fallbackInfo = await fallbackTransporter.sendMail({
+          from: `"IEM Admissions" <${user}>`,
+          to,
+          subject,
+          html: htmlContent,
+          text: `Dear ${studentName},\n\nYour application status for ${program} at IEM Kolkata: ${status.toUpperCase()}.\n\nIEM Kolkata Admission Cell`,
+        });
+
+        console.log(`[Email Service] ✅ Fallback delivery succeeded to ${to} (Message ID: ${fallbackInfo.messageId})`);
+        return { success: true, messageId: fallbackInfo.messageId, recipient: to };
+      } catch (fbErr) {
+        console.error(`[Email Service Error] Fallback also failed:`, fbErr.message);
+      }
+    }
+
+    let friendlyError = error.message;
+    if (error.code === 'ETIMEDOUT' || error.message.includes('timeout') || error.message.includes('connect')) {
+      friendlyError = 'SMTP connection blocked (Render Free Tier blocks outbound ports 465/587). Add RESEND_API_KEY in Render to send via HTTPS.';
+    }
+
+    return { success: false, error: friendlyError, recipient: to };
   }
 };
 

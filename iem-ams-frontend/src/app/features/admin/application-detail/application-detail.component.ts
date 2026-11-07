@@ -6,12 +6,13 @@
  * - Lists and enables download of all attached student verification documents
  * - Provides decision panel to change status ('under_review', 'accepted', 'rejected')
  * - Writes official reviewer notes that reflect on the student's dashboard
+ * - Displays dedicated confirmation page upon decision save with countdown redirect to dashboard
  */
 
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AdminService } from '../../../core/services/admin.service';
 import { Application, ApplicationStatus } from '../../../shared/models/application.model';
 import { DocumentItem, getDocumentLabel } from '../../../shared/models/document.model';
@@ -24,8 +25,9 @@ import { StatusBadgeComponent } from '../../../shared/components/status-badge/st
   templateUrl: './application-detail.component.html',
   styleUrls: ['./application-detail.component.css']
 })
-export class ApplicationDetailComponent implements OnInit {
+export class ApplicationDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
   private adminService = inject(AdminService);
 
   applicationId = '';
@@ -34,19 +36,31 @@ export class ApplicationDetailComponent implements OnInit {
 
   isLoading = true;
   isUpdating = false;
+  isDecisionSubmitted = false;
   successMessage = '';
   errorMessage = '';
   emailPreviewUrl = '';
+  emailDelivered = false;
+  recipientEmail = '';
+  emailErrorMessage = '';
 
   // Decision controls
   selectedStatus: ApplicationStatus = 'under_review';
   adminRemarks = '';
+
+  // Countdown timer to move to dashboard
+  countdownSeconds = 8;
+  countdownTimer: any = null;
 
   ngOnInit(): void {
     this.applicationId = this.route.snapshot.paramMap.get('id') || '';
     if (this.applicationId) {
       this.loadDossier();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.clearTimer();
   }
 
   loadDossier(): void {
@@ -80,13 +94,48 @@ export class ApplicationDetailComponent implements OnInit {
           this.isUpdating = false;
           this.application = res.data;
           this.emailPreviewUrl = res.data?.emailPreviewUrl || '';
-          this.successMessage = res.message || `Application status updated to "${res.data.status?.toUpperCase()}". An email notification has been dispatched to ${this.application?.applicant?.email}.`;
+          this.emailDelivered = res.data?.emailDelivered ?? false;
+          this.recipientEmail = res.data?.recipientEmail || this.application?.applicant?.email || '';
+          this.emailErrorMessage = res.data?.emailErrorMessage || '';
+          this.successMessage =
+            res.message ||
+            `Application status updated to "${res.data.status?.toUpperCase()}". Notification email dispatched to ${this.recipientEmail}.`;
+          this.isDecisionSubmitted = true;
+          this.startCountdown();
+          window.scrollTo({ top: 0, behavior: 'instant' });
         },
         error: (err) => {
           this.isUpdating = false;
           this.errorMessage = err.error?.message || 'Failed to update application decision.';
         }
       });
+  }
+
+  startCountdown(): void {
+    this.clearTimer();
+    this.countdownSeconds = 5;
+    this.countdownTimer = setInterval(() => {
+      this.countdownSeconds--;
+      if (this.countdownSeconds <= 0) {
+        this.moveToDashboard();
+      }
+    }, 1000);
+  }
+
+  cancelCountdown(): void {
+    this.clearTimer();
+  }
+
+  clearTimer(): void {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+  }
+
+  moveToDashboard(): void {
+    this.clearTimer();
+    this.router.navigate(['/admin/dashboard']);
   }
 
   downloadDoc(doc: DocumentItem): void {
@@ -117,4 +166,3 @@ export class ApplicationDetailComponent implements OnInit {
     return getDocumentLabel(type);
   }
 }
-
