@@ -6,6 +6,6 @@
  */
 export const environment = {
   production: true,
-  apiUrl: 'https://your-production-api-domain/api/v1',
+  apiUrl: 'https://admission-portal-9n94.onrender.com/api/v1',
 };
 
