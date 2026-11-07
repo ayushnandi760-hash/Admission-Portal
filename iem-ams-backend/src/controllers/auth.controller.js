@@ -92,6 +92,44 @@ const login = async (req, res) => {
   }
 };
 
+// GET & POST /api/v1/auth/setup-admin — Safe self-healing endpoint to guarantee admin exists
+const setupAdmin = async (req, res) => {
+  try {
+    const adminEmail = (process.env.ADMIN_EMAIL || 'admin@iem.edu.in').toLowerCase().trim();
+    const adminPass = process.env.ADMIN_PASSWORD || 'SecureAdminPass@123';
+    const adminName = process.env.ADMIN_NAME || 'IEM Administrator';
+
+    let admin = await User.findOne({ email: adminEmail });
+    const passwordHash = await bcrypt.hash(adminPass, SALT_ROUNDS);
+
+    if (admin) {
+      admin.passwordHash = passwordHash;
+      admin.role = 'admin';
+      admin.fullName = adminName;
+      await admin.save();
+      return sendSuccess(res, {
+        message: 'Admin account credentials verified and synced successfully.',
+        data: { email: admin.email, role: admin.role, defaultPassword: adminPass },
+      });
+    }
+
+    admin = await User.create({
+      fullName: adminName,
+      email: adminEmail,
+      passwordHash,
+      role: 'admin',
+    });
+
+    return sendSuccess(res, {
+      statusCode: 201,
+      message: 'Admin account created successfully in MongoDB database.',
+      data: { email: admin.email, role: admin.role, defaultPassword: adminPass },
+    });
+  } catch (err) {
+    return sendError(res, { statusCode: 500, message: err.message });
+  }
+};
+
 // GET /api/v1/auth/me
 const getMe = async (req, res) => {
   try {
@@ -107,5 +145,5 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe };
+module.exports = { register, login, getMe, setupAdmin };
 

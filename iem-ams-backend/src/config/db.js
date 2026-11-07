@@ -6,6 +6,11 @@
  * Exports a single async function called by server.js at startup.
  */
 
+const dns = require('dns');
+try {
+  dns.setServers(['8.8.8.8', '8.8.4.4']);
+} catch (_) {}
+
 const mongoose = require('mongoose');
 
 const connectDB = async () => {

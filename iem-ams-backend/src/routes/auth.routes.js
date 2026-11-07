@@ -8,8 +8,12 @@
 
 const express = require('express');
 const router = express.Router();
-const { register, login, getMe } = require('../controllers/auth.controller');
+const { register, login, getMe, setupAdmin } = require('../controllers/auth.controller');
 const { protect } = require('../middleware/auth.middleware');
+
+// GET & POST /api/v1/auth/setup-admin — Safe self-healing endpoint to guarantee admin account exists
+router.get('/setup-admin', setupAdmin);
+router.post('/setup-admin', setupAdmin);
 
 // POST /api/v1/auth/register — Create a new student account
 router.post('/register', register);
