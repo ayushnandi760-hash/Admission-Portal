@@ -109,26 +109,55 @@ const updateApplicationStatus = async (req, res) => {
     if (adminRemarks !== undefined) application.adminRemarks = adminRemarks;
     await application.save();
 
-    // Create in-app notification for the student portal
-    const statusLabels = {
-      submitted: 'is marked as submitted',
-      under_review: 'is now under review',
-      accepted: 'has been accepted',
-      rejected: 'has been rejected',
-    };
-    await Notification.create({
-      recipient: application.applicant._id,
-      message: `Your application for ${application.programApplied} ${statusLabels[status]}.`,
-    });
+    // 1. Create prominent in-app notification for the student portal
+    let notifTitle = 'Application Status Updated';
+    let notifType = 'info';
+    let notifMessage = `Your application for ${application.programApplied} is now marked as ${status}.`;
 
-    // Dispatch automated email notification to student's registered email
-    const emailResult = await sendAdmissionStatusEmail({
-      to: application.applicant.email,
-      studentName: application.applicant.fullName,
-      program: application.programApplied,
-      status,
-      remarks: adminRemarks,
-    });
+    if (status === 'accepted') {
+      notifTitle = '🎉 Congratulations! You Have Been Selected';
+      notifType = 'success';
+      notifMessage = `Congratulations! Your admission application for ${application.programApplied} (${application.department || 'Selected Department'}) has been ACCEPTED / SELECTED. Please review your portal for provisional allotment details.${adminRemarks ? ` Reviewer Note: "${adminRemarks}"` : ''}`;
+    } else if (status === 'rejected') {
+      notifTitle = 'Admission Decision: Not Selected';
+      notifType = 'danger';
+      notifMessage = `Your admission application for ${application.programApplied} was not selected for this admission round.${adminRemarks ? ` Reviewer Remarks: "${adminRemarks}"` : ''}`;
+    } else if (status === 'under_review') {
+      notifTitle = 'Application Under Active Review';
+      notifType = 'warning';
+      notifMessage = `Your application for ${application.programApplied} is currently undergoing academic scrutiny and document verification by the IEM admissions committee.`;
+    }
+
+    try {
+      await Notification.create({
+        recipient: application.applicant._id,
+        title: notifTitle,
+        message: notifMessage,
+        type: notifType,
+        link: '/student/dashboard',
+      });
+    } catch (notifErr) {
+      console.error('[Student Decision Notification Error]:', notifErr.message);
+    }
+
+    // 2. Dispatch automated email notification (with 6s timeout so UI never hangs)
+    let emailResult = null;
+    try {
+      emailResult = await Promise.race([
+        sendAdmissionStatusEmail({
+          to: application.applicant.email,
+          studentName: application.applicant.fullName,
+          program: application.programApplied,
+          status,
+          remarks: adminRemarks,
+        }),
+        new Promise((resolve) =>
+          setTimeout(() => resolve({ success: false, error: 'Email timeout - queued' }), 6000)
+        ),
+      ]);
+    } catch (emailErr) {
+      console.error('[Email Dispatch Error]:', emailErr.message);
+    }
 
     const responseData = application.toObject();
     if (emailResult && emailResult.previewUrl) {
@@ -136,7 +165,7 @@ const updateApplicationStatus = async (req, res) => {
     }
 
     return sendSuccess(res, {
-      message: `Application status updated to '${status}'. An email notification was sent to ${application.applicant.email}.`,
+      message: `Application status updated to '${status}'. ${emailResult?.success ? `An email notification was sent to ${application.applicant.email}.` : ''}`,
       data: responseData,
     });
   } catch (err) {

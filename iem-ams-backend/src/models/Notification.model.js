@@ -18,10 +18,24 @@ const notificationSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    title: {
+      type: String,
+      trim: true,
+      default: 'Application Notification',
+    },
     message: {
       type: String,
       required: true,
       trim: true,
+    },
+    type: {
+      type: String,
+      enum: ['info', 'success', 'warning', 'danger'],
+      default: 'info',
+    },
+    link: {
+      type: String,
+      default: '',
     },
     isRead: {
       type: Boolean,

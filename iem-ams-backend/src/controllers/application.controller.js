@@ -14,6 +14,8 @@
 const crypto = require('crypto');
 const Application = require('../models/Application.model');
 const Document = require('../models/Document.model');
+const Notification = require('../models/Notification.model');
+const User = require('../models/User.model');
 const { sendSuccess, sendError } = require('../utils/response.utils');
 
 // ─── Verified Official IEM Offerings Configuration ──────────────────────────
@@ -420,6 +422,37 @@ const submitApplication = async (req, res) => {
     application.status = 'submitted';
     application.submittedAt = new Date();
     await application.save();
+
+    // 4. Create in-app notification for the Student
+    try {
+      await Notification.create({
+        recipient: req.user.id,
+        title: 'Application Submitted Successfully',
+        message: `Your admission application for ${application.programApplied} (${application.department || 'Selected Department'}) has been received with Reference No: ${application.applicationNumber}. It is now in the review queue.`,
+        type: 'success',
+        link: '/student/dashboard',
+      });
+    } catch (sNotifErr) {
+      console.error('[Student Submit Notification Error]:', sNotifErr.message);
+    }
+
+    // 5. Create in-app notification for all Admins
+    try {
+      const admins = await User.find({ role: 'admin' });
+      const candidateName = application.personalDetails?.fullName || req.user.fullName || 'New Applicant';
+      const adminNotifs = admins.map((adm) => ({
+        recipient: adm._id,
+        title: 'New Admission Application Submitted',
+        message: `Candidate ${candidateName} has submitted an admission application for ${application.programApplied} [Ref: ${application.applicationNumber}].`,
+        type: 'info',
+        link: `/admin/applications/${application._id}`,
+      }));
+      if (adminNotifs.length > 0) {
+        await Notification.insertMany(adminNotifs);
+      }
+    } catch (aNotifErr) {
+      console.error('[Admin Submit Notification Error]:', aNotifErr.message);
+    }
 
     return sendSuccess(res, {
       message: 'Application submitted successfully! Your application reference number has been generated.',

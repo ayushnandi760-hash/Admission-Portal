@@ -117,7 +117,10 @@
                   <div class="d-flex align-items-start gap-2">
                     <span class="fs-6 mt-1">{{ notif.isRead ? '✉️' : '📩' }}</span>
                     <div class="flex-grow-1">
-                      <div class="small text-dark" [ngClass]="{ 'fw-bold': !notif.isRead }">
+                      <div *ngIf="notif.title" class="small fw-bold text-primary mb-1">
+                        {{ notif.title }}
+                      </div>
+                      <div class="small text-dark" [ngClass]="{ 'fw-semibold': !notif.isRead }">
                         {{ notif.message }}
                       </div>
                       <small class="text-muted" style="font-size: 0.75rem;">

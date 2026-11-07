@@ -29,6 +29,9 @@ const getTransporter = async () => {
           user,
           pass,
         },
+        connectionTimeout: 8000,
+        greetingTimeout: 5000,
+        socketTimeout: 10000,
       });
       console.log(`[Email Service] Configured live Gmail SMTP with sender: ${user}`);
     } else {
@@ -40,6 +43,9 @@ const getTransporter = async () => {
           user,
           pass,
         },
+        connectionTimeout: 8000,
+        greetingTimeout: 5000,
+        socketTimeout: 10000,
       });
       console.log(`[Email Service] Configured live SMTP (${host}:${port}) with sender: ${user}`);
     }
