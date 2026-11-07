@@ -186,7 +186,7 @@
               <div class="d-flex align-items-center flex-wrap gap-3">
                 <div class="text-end">
                   <span class="fw-bold fs-5" [class.text-success]="allRequiredUploaded" [class.text-warning]="!allRequiredUploaded">
-                    {{ docStatus?.uploadedRequired || 0 }} / {{ docStatus?.totalRequired || 4 }}
+                    {{ allRequiredUploaded ? (docStatus?.totalRequired || 5) : (docStatus?.uploadedRequired || 0) }} / {{ docStatus?.totalRequired || 5 }}
                   </span>
                   <div class="small text-muted">Required Uploads Completed</div>
                 </div>
@@ -221,7 +221,7 @@
                 [class.bg-success]="allRequiredUploaded"
                 [class.bg-primary]="!allRequiredUploaded"
                 role="progressbar"
-                [style.width.%]="((docStatus?.uploadedRequired || 0) / (docStatus?.totalRequired || 1)) * 100"
+                [style.width.%]="allRequiredUploaded ? 100 : (((docStatus?.uploadedRequired || 0) / (docStatus?.totalRequired || 1)) * 100)"
               ></div>
             </div>
           </div>

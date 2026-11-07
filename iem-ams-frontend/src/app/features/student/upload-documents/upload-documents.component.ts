@@ -104,6 +104,15 @@ export class UploadDocumentsComponent implements OnInit {
       required: true,
     },
     {
+      docType: 'class_10_admit',
+      title: 'Class 10 Admit Card (Age Proof)',
+      description: 'Official admit card issued by board as proof of age and identity.',
+      acceptedFormats: 'PDF, JPG, PNG',
+      maxSizeBytes: 5 * 1024 * 1024,
+      maxSizeLabel: '5 MB',
+      required: false,
+    },
+    {
       docType: 'class_12_marksheet',
       title: 'Class 12 (Higher Secondary) Marksheet',
       description: 'Official marksheet showing Physics, Chemistry, and Mathematics scores.',
@@ -371,12 +380,21 @@ export class UploadDocumentsComponent implements OnInit {
   }
 
   get allRequiredUploaded(): boolean {
-    return this.docStatus?.allRequiredUploaded || false;
+    const screenRequiredUploaded = this.documentCards
+      .filter((c) => c.required)
+      .every((c) => !!c.uploadedDoc);
+
+    return (
+      (this.docStatus?.allRequiredUploaded ||
+        this.docStatus?.isComplete ||
+        screenRequiredUploaded) &&
+      this.uploadedDocuments.length >= 2
+    );
   }
 
   get missingCount(): number {
     if (!this.docStatus) return 0;
-    return this.docStatus.totalRequired - this.docStatus.uploadedRequired;
+    return Math.max(0, this.docStatus.totalRequired - this.docStatus.uploadedRequired);
   }
 
   goToStage(stage: 'upload' | 'review' | 'success'): void {
@@ -437,7 +455,14 @@ export class UploadDocumentsComponent implements OnInit {
     const requiredCards = this.documentCards.filter(
       (c) =>
         c.required ||
-        ['photo', 'signature', 'class_10_marksheet', 'class_12_marksheet', 'entrance_rank_card'].includes(c.docType)
+        [
+          'photo',
+          'signature',
+          'class_10_marksheet',
+          'class_10_admit',
+          'class_12_marksheet',
+          'entrance_rank_card',
+        ].includes(c.docType)
     );
 
     let index = 0;
