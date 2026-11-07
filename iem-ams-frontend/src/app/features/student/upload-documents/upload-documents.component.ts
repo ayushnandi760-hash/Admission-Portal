@@ -217,11 +217,11 @@ export class UploadDocumentsComponent implements OnInit {
       diplomaCard.required = !!hasDiploma;
     }
 
-    // Category certificate: required if not General
-    const category = this.application.personalDetails?.category || this.application.admissionCategory;
+    // Category certificate: required ONLY if social category is SC, ST, OBC, or EWS
+    const socialCategory = (this.application.personalDetails?.category || '').trim();
     const casteCard = this.documentCards.find((c) => c.docType === 'caste_certificate');
     if (casteCard) {
-      casteCard.required = !!(category && category !== 'General' && category !== 'Other');
+      casteCard.required = ['SC', 'ST', 'OBC', 'OBC-A', 'OBC-B', 'EWS'].includes(socialCategory);
     }
   }
 
@@ -380,15 +380,18 @@ export class UploadDocumentsComponent implements OnInit {
   }
 
   get allRequiredUploaded(): boolean {
+    const hasPhoto = this.uploadedDocuments.some((d) => d.docType === 'photo');
+    const hasSign = this.uploadedDocuments.some((d) => d.docType === 'signature');
+
     const screenRequiredUploaded = this.documentCards
       .filter((c) => c.required)
       .every((c) => !!c.uploadedDoc);
 
-    return (
-      (this.docStatus?.allRequiredUploaded ||
-        this.docStatus?.isComplete ||
-        screenRequiredUploaded) &&
-      this.uploadedDocuments.length >= 2
+    return !!(
+      this.docStatus?.allRequiredUploaded ||
+      this.docStatus?.isComplete ||
+      screenRequiredUploaded ||
+      (hasPhoto && hasSign && this.uploadedDocuments.length >= 4)
     );
   }
 
@@ -462,6 +465,7 @@ export class UploadDocumentsComponent implements OnInit {
           'class_10_admit',
           'class_12_marksheet',
           'entrance_rank_card',
+          'caste_certificate',
         ].includes(c.docType)
     );
 
