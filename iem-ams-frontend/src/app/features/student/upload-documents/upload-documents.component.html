@@ -157,9 +157,12 @@
               <a routerLink="/student/dashboard" class="btn btn-outline-secondary px-4">
                 &larr; Return to Dashboard
               </a>
-              <div class="d-flex gap-2">
-                <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" (click)="printReceipt()">
-                  🖨️ Print / Download Receipt (PDF)
+              <div class="d-flex flex-wrap gap-2">
+                <a routerLink="/student/view" class="btn btn-outline-primary px-3 fw-bold d-flex align-items-center gap-1">
+                  <span>📄</span> View Single-Page Application
+                </a>
+                <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm d-flex align-items-center gap-2" (click)="printReceipt()">
+                  <span>📥</span> Download Application PDF
                 </button>
               </div>
             </div>

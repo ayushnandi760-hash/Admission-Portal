@@ -11,6 +11,7 @@ import { RegisterComponent } from './features/auth/register/register.component';
 import { StudentDashboardComponent } from './features/student/dashboard/dashboard.component';
 import { ApplyComponent } from './features/student/apply/apply.component';
 import { UploadDocumentsComponent } from './features/student/upload-documents/upload-documents.component';
+import { ViewApplicationComponent } from './features/student/view-application/view-application.component';
 import { AdminDashboardComponent } from './features/admin/dashboard/dashboard.component';
 import { ApplicationsListComponent } from './features/admin/applications-list/applications-list.component';
 import { ApplicationDetailComponent } from './features/admin/application-detail/application-detail.component';
@@ -31,6 +32,8 @@ export const routes: Routes = [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: StudentDashboardComponent },
       { path: 'apply', component: ApplyComponent },
+      { path: 'view', component: ViewApplicationComponent },
+      { path: 'view/:id', component: ViewApplicationComponent },
       { path: 'documents', component: UploadDocumentsComponent },
       { path: 'documents/:applicationId', component: UploadDocumentsComponent },
       { path: 'application/documents/:applicationId', component: UploadDocumentsComponent }
@@ -42,6 +45,18 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard],
     data: { roles: ['student'] },
     component: UploadDocumentsComponent
+  },
+  {
+    path: 'application/view',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['student'] },
+    component: ViewApplicationComponent
+  },
+  {
+    path: 'application/view/:id',
+    canActivate: [authGuard, roleGuard],
+    data: { roles: ['student'] },
+    component: ViewApplicationComponent
   },
 
   // Admin routes (requires authentication + admin role)

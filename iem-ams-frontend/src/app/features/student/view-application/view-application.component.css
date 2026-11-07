@@ -1,0 +1,133 @@
+/**
+ * Single-Page Full Application View Styles
+ */
+
+.view-application-container {
+  background-color: #f7f9fc;
+  min-height: calc(100vh - 120px);
+}
+
+.action-toolbar {
+  border-radius: 12px;
+  background-color: #ffffff;
+}
+
+.application-sheet {
+  background-color: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(0, 51, 102, 0.1) !important;
+}
+
+.iem-emblem-box {
+  width: 58px;
+  height: 58px;
+  background: linear-gradient(135deg, #003366 0%, #002244 100%);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.iem-emblem-text {
+  font-weight: 900;
+  font-size: 1.2rem;
+  line-height: 1.1;
+  color: #ffc107;
+  letter-spacing: 1px;
+}
+
+.iem-emblem-sub {
+  font-size: 0.55rem;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+}
+
+.iem-sheet-title {
+  color: #003366;
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+
+.bg-iem-gold {
+  background-color: #ffc107 !important;
+}
+
+.bg-light-blue {
+  background-color: #f0f7ff !important;
+  border-color: #c7defa !important;
+}
+
+.section-title-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-bottom: 2px solid #003366;
+  padding-bottom: 0.4rem;
+}
+
+.section-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background-color: #003366;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.field-value {
+  font-size: 0.95rem;
+}
+
+@media (min-width: 768px) {
+  .border-end-md {
+    border-right: 1px solid #dee2e6 !important;
+  }
+}
+
+/* Print Styles for PDF Generation */
+@media print {
+  body, .view-application-container {
+    background-color: #ffffff !important;
+    padding: 0 !important;
+  }
+
+  .no-print, nav, footer, .btn, .action-toolbar {
+    display: none !important;
+  }
+
+  .application-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .bg-light, .bg-light-blue {
+    background-color: #fcfcfc !important;
+    border: 1px solid #ddd !important;
+  }
+
+  table {
+    page-break-inside: avoid;
+  }
+}

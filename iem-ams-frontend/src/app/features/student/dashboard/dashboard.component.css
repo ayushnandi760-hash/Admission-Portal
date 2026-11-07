@@ -1,0 +1,82 @@
+/**
+ * Student Dashboard & Review Timeline Styles
+ */
+
+.timeline-card {
+  border-radius: 14px;
+}
+
+.timeline-stepper {
+  position: relative;
+  padding-left: 2rem;
+}
+
+.timeline-stepper::before {
+  content: '';
+  position: absolute;
+  top: 15px;
+  bottom: 25px;
+  left: 20px;
+  width: 3px;
+  background-color: #e2e8f0;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-icon {
+  position: absolute;
+  left: -2rem;
+  top: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.95rem;
+  z-index: 2;
+  box-shadow: 0 0 0 4px #ffffff;
+}
+
+.timeline-content {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.timeline-item.completed .timeline-content {
+  background-color: #ffffff;
+  border-color: #cbd5e1;
+}
+
+.timeline-item.active .timeline-content {
+  background-color: #ffffff;
+  border-color: #003366;
+  box-shadow: 0 4px 14px rgba(0, 51, 102, 0.08);
+}
+
+.pulse-animation {
+  animation: pulse 1.8s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 51, 102, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(0, 51, 102, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(0, 51, 102, 0);
+  }
+}
