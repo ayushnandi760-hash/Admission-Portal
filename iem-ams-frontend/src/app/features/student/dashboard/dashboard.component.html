@@ -359,7 +359,7 @@
           <div
             *ngFor="let n of notifications"
             class="list-group-item list-group-item-action d-flex justify-content-between align-items-start p-3"
-            [class.bg-light]="!n.read"
+            [class.bg-light]="!n.isRead"
           >
             <div>
               <div class="fw-bold text-dark small">{{ n.title }}</div>

@@ -12,6 +12,7 @@ export interface AppNotification {
   type?: 'info' | 'success' | 'warning' | 'danger';
   link?: string;
   isRead: boolean;
+  read?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
