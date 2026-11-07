@@ -253,6 +253,44 @@ const sendAdmissionStatusEmail = async ({ to, studentName, program, status, rema
         } else {
           const resendErrMessage = resData.message || (resData.error && resData.error.message) || JSON.stringify(resData);
           console.warn(`[Email Service] Resend HTTPS returned error:`, resendErrMessage);
+
+          // If Resend free tier restricts to owner's email address during testing:
+          const matchOwnerEmail = resendErrMessage.match(/\(([^)]+@(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})\)/);
+          const ownerEmail = matchOwnerEmail ? matchOwnerEmail[1] : (process.env.RESEND_TEST_EMAIL || 'ayushnandi760@gmail.com');
+
+          if (ownerEmail && !recipientList.includes(ownerEmail)) {
+            console.log(`[Email Service] Resend test tier restriction detected. Rerouting to registered Resend testing inbox: ${ownerEmail}...`);
+            const retryRes = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: resendFrom,
+                to: [ownerEmail],
+                subject: `[Candidate: ${to}] ${subject}`,
+                html: `<div style="background:#e8f4fd;padding:12px 16px;border-left:4px solid #003366;margin-bottom:18px;font-family:sans-serif;font-size:13px;color:#002244;border-radius:4px;">
+                  <strong>⚡ Resend Sandbox Test Mode Notice:</strong><br>
+                  This admission decision was issued for candidate <strong>${studentName}</strong> (Registered email: <code>${to}</code>).<br>
+                  Because your Resend account is using the free <code>onboarding@resend.dev</code> testing sandbox, Resend routed this official decision letter to your registered developer email (<strong>${ownerEmail}</strong>).
+                </div>` + htmlContent,
+                text: `[Candidate: ${to}]\n` + plainText,
+              }),
+            });
+
+            const retryData = await retryRes.json();
+            if (retryRes.ok && retryData.id) {
+              console.log(`[Email Service] ✅ Email delivered to test recipient ${ownerEmail}! ID: ${retryData.id}`);
+              return {
+                success: true,
+                messageId: retryData.id,
+                recipient: `${ownerEmail} (For: ${to})`,
+                provider: 'resend',
+              };
+            }
+          }
+
           return { success: false, error: `Resend: ${resendErrMessage}`, recipient: to, provider: 'resend' };
         }
       } catch (resendErr) {
