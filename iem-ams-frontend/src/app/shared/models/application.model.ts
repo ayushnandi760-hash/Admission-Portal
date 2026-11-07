@@ -193,6 +193,10 @@ export interface DocumentsStatusResponse {
   totalRequired: number;
   uploadedRequired: number;
   allRequiredUploaded: boolean;
+  isComplete?: boolean;
+  requiredTypes?: string[];
+  uploadedTypes?: string[];
   missingRequired: string[];
-  checklist: DocumentStatusItem[];
+  checklist?: DocumentStatusItem[];
+  totalUploaded?: number;
 }
