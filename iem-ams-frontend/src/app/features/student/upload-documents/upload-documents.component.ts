@@ -414,8 +414,8 @@ export class UploadDocumentsComponent implements OnInit {
       return;
     }
 
-    if (!this.allRequiredUploaded) {
-      this.errorMessage = 'Please upload all mandatory documents before final submission.';
+    if (this.uploadedDocuments.length < 2) {
+      this.errorMessage = 'Please upload your mandatory verification documents (Photo, Signature) before final submission.';
       return;
     }
 
